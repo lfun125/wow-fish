@@ -2,51 +2,54 @@ package circle
 
 import (
 	"math"
-
-	"github.com/go-vgo/robotgo"
 )
 
 type Coordinate struct {
+	// 半径
+	Radius float64
 	// 角度
-	Angle float64
-	X     int
-	Y     int
-}
-
-type Action func(x, y int) error
-
-func (c Coordinate) Move(fn Action) (err error) {
-	robotgo.MoveMouse(c.X, c.Y)
-	err = fn(c.X, c.Y)
-	return
+	Radian float64
+	// X 坐标
+	X int
+	// Y 坐标
+	Y int
 }
 
 type Circle struct {
 	// 半径
-	Radius int
+	Radius float64
 	// 中心点坐标
 	Center [2]int
+	// 单次弧长
+	ArcLen float64
 }
 
-func NewCircle(radius, x, y int) *Circle {
+// NewCircle
+// radius 周长
+// arc 每次移动弧度
+// width 屏幕宽度
+// height 屏幕高度
+func NewCircle(radius, arc float64, width, height int) *Circle {
 	c := &Circle{
 		Radius: radius,
 	}
-	c.Center[0] = x / 2
-	c.Center[1] = y / 2
+	c.Center[0] = width / 2
+	c.Center[1] = height / 2
+	c.ArcLen = arc
 	return c
 }
 
 // 获取一个圆周坐标
 func (c Circle) ListCoordinates() (list []Coordinate) {
-	// 周长
-	for angle := 0.0; angle < 360; angle++ {
+	cir := 2 * c.Radius * math.Pi
+	for arc := 0.0; arc <= cir; arc += c.ArcLen {
 		// 幅度
-		radian := angle * (math.Pi / 180)
+		radian := arc / c.Radius
 		list = append(list, Coordinate{
-			Angle: angle,
-			X:     round(math.Sin(radian)*float64(c.Radius)) + c.Center[0],
-			Y:     round(math.Cos(radian)*float64(c.Radius)) + c.Center[1],
+			Radius: c.Radius,
+			Radian: radian,
+			X:      round(math.Sin(radian)*c.Radius) + c.Center[0],
+			Y:      round(math.Cos(radian)*c.Radius) + c.Center[1],
 		})
 	}
 	return
