@@ -1,28 +1,18 @@
 package main
 
 import (
+	"fish/circle"
 	"time"
 
-	"gobot.io/x/gobot"
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/platforms/firmata"
+	"github.com/go-vgo/robotgo"
 )
 
 func main() {
-	firmataAdaptor := firmata.NewAdaptor("/dev/ttyACM0")
-	led := gpio.NewLedDriver(firmataAdaptor, "13")
-
-	work := func() {
-		gobot.Every(1*time.Second, func() {
-			led.Toggle()
-		})
+	x, y := robotgo.GetScreenSize()
+	radius := 100
+	c := circle.NewCircle(radius, x, y)
+	for _, r := range c.ListCoordinates() {
+		robotgo.MoveMouse(r.X, r.Y)
+		time.Sleep(5 * time.Millisecond)
 	}
-
-	robot := gobot.NewRobot("bot",
-		[]gobot.Connection{firmataAdaptor},
-		[]gobot.Device{led},
-		work,
-	)
-
-	robot.Start()
 }

@@ -39,6 +39,7 @@ func NewCircle(radius, x, y int) *Circle {
 
 // 获取一个圆周坐标
 func (c Circle) ListCoordinates() (list []Coordinate) {
+	// 周长
 	for angle := 0.0; angle < 360; angle++ {
 		// 幅度
 		radian := angle * (math.Pi / 180)
