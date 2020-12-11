@@ -39,12 +39,13 @@ func findFishFloat() {
 	step := STEP
 	for {
 		time.Sleep(100 * time.Millisecond)
+	STOP:
 		if !StartFindFishFloat {
 			continue
 		}
 		for _, c := range screen.ListScreenPoints(step) {
 			if !StartFindFishFloat {
-				continue
+				continue STOP
 			}
 			before := screen.CaptureScreen(c.X, c.Y, step)
 			robotgo.MoveMouse(c.X, c.Y)
@@ -53,6 +54,10 @@ func findFishFloat() {
 			n := compared(before, after)
 			if n > 0 {
 				fmt.Println(n)
+				if n >= 20 {
+					StartFindFishFloat = false
+					continue STOP
+				}
 			}
 		}
 	}
