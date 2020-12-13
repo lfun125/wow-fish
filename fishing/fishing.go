@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/go-vgo/robotgo"
@@ -38,6 +39,7 @@ func NewFishing(c *Config) *Fishing {
 	img := robotgo.ToImage(bitmapRef)
 	displayWidth := img.Bounds().Size().X
 	f.screenInfo.DisplayZoom = float64(10) / float64(displayWidth)
+	fmt.Println(f.screenInfo)
 	return f
 }
 
@@ -45,27 +47,24 @@ func (f *Fishing) Run() error {
 	go f.watchSwitch()
 	go f.watchTask()
 	select {}
-	return nil
 }
 
 func (f *Fishing) watchTask() {
-	for {
+	for task := range f.task {
+		typ := f.runTask(task)
 		select {
-		case task := <-f.task:
-			typ := f.runTask(task)
-			select {
-			case <-task.Context.Done():
-				f.Info("User manual pause")
-			default:
-				go func(task *Task) {
-					switch typ {
-					case TaskTypeThrowFishingRod:
-						f.start()
-					case TaskTypeWait:
-						f.waitPullHook(task.Context, task.Timeout)
-					}
-				}(task)
-			}
+		case <-task.Context.Done():
+			f.Info("User manual pause")
+		default:
+			go func(task *Task) {
+				switch typ {
+				case TaskTypeThrowFishingRod:
+					time.Sleep(2 * time.Second)
+					f.start()
+				case TaskTypeWait:
+					f.waitPullHook(task.Context, task.Timeout)
+				}
+			}(task)
 		}
 	}
 }
@@ -135,8 +134,12 @@ func (f *Fishing) runTask(t *Task) TaskType {
 
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
-	bitmapRef := robotgo.CaptureScreen(f.activeX, f.activeY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+	width := f.Config.CompareCoordinate
+	x := f.activeX - width/2
+	y := f.activeY - width/2
+	bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 	oldImg := robotgo.ToImage(bitmapRef)
+	utils.SavePng("watch.png", oldImg)
 	for {
 		select {
 		case <-t.Timeout:
@@ -145,14 +148,15 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 		case <-t.Context.Done():
 			return false
 		default:
-			bitmapRef := robotgo.CaptureScreen(f.activeX, f.activeY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
 			n := utils.Compared(oldImg, newImg)
-			if n > f.Config.FindThreshold {
-				robotgo.KeyTap("right")
+			f.Info("Compared vaule:", n)
+			if n >= 14 {
+				robotgo.MouseClick("right")
 				return true
 			}
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
@@ -199,8 +203,37 @@ func (f *Fishing) stepThrowFishingRod(t *Task) bool {
 					f.Info(err)
 					return false
 				} else if isFind {
-					f.activeX = x
-					f.activeY = y
+					// 找到最红得位置
+					var maxRed int64
+					rx, ry := x, y
+					tx, ty := x-f.Config.StepPixel/2, y-f.Config.StepPixel/2
+					for i := 0; i < f.Config.StepPixel; i += 10 {
+						for ii := 0; ii < f.Config.StepPixel; ii += 10 {
+							colorStr := robotgo.GetPixelColor(tx, ty)
+							// var red int64
+							if len(colorStr) == 6 {
+								rs := colorStr[0:2]
+								gs := colorStr[2:4]
+								bs := colorStr[4:]
+								rr, _ := strconv.ParseInt(rs, 16, 64)
+								gg, _ := strconv.ParseInt(gs, 16, 64)
+								bb, _ := strconv.ParseInt(bs, 16, 64)
+								if rr+gg+bb > maxRed {
+									maxRed = rr + gg + bb
+									rx, ry = tx, ty
+								}
+								// fmt.Println("coc", tx, ty, colorStr, rs, gs, bs)
+							}
+
+							ty++
+						}
+						tx++
+						ty = y - f.Config.StepPixel/2
+					}
+
+					f.activeX = rx
+					f.activeY = ry
+					robotgo.Move(f.activeX, f.activeY)
 					return true
 				}
 			}
@@ -215,15 +248,18 @@ func (f *Fishing) find(x, y int) (bool, error) {
 	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
 	oldImg := robotgo.ToImage(bitmapRef)
 	robotgo.Move(x, y)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	// 移动后对比图片
 	bitmapRef = robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
 	if bitmapRef == nil {
 		return false, ErrOutOfBounds
 	}
 	resultImg := robotgo.ToImage(bitmapRef)
+	// utils.SavePng(fmt.Sprintf("%d_%d_1.png", cutX, cutY), oldImg)
+	// utils.SavePng(fmt.Sprintf("%d_%d_2.png", cutX, cutY), oldImg)
 	n := utils.Compared(resultImg, oldImg)
-	if n > f.Config.FindThreshold {
+	// fmt.Println("wait", n)
+	if n >= 20 {
 		return true, nil
 	}
 	return false, nil

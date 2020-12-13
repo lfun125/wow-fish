@@ -17,11 +17,11 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		SwitchButton:      "f10",
-		StepPixel:         30,
-		CompareCoordinate: 20,
+		SwitchButton:      "f3",
+		StepPixel:         50,
+		CompareCoordinate: 120,
 		FindThreshold:     20,
-		InitialRadius:     20,
+		InitialRadius:     40,
 		ThrowButton:       "1",
 	}
 }
