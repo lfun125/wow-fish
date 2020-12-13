@@ -2,11 +2,7 @@ package fishing
 
 import (
 	"context"
-	"fmt"
-)
-
-var (
-	ErrOutOfBounds = fmt.Errorf("Out of bounds ")
+	"time"
 )
 
 type TaskType int
@@ -22,4 +18,5 @@ const (
 type Task struct {
 	Type    TaskType
 	Context context.Context
+	Timeout <-chan time.Time
 }

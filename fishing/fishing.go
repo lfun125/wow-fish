@@ -3,6 +3,7 @@ package fishing
 import "C"
 import (
 	"context"
+	"errors"
 	"fish/utils"
 	"fmt"
 	"log"
@@ -12,11 +13,19 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
+var (
+	ErrOutOfBounds = errors.New("Out of bounds ")
+	ErrClose       = errors.New("user close")
+)
+
 type Fishing struct {
 	Config     *Config
 	screenInfo *ScreenInfo
+	activeX    int
+	activeY    int
 	task       chan *Task
 	cancelFunc context.CancelFunc
+	times      int
 }
 
 func NewFishing(c *Config) *Fishing {
@@ -44,9 +53,21 @@ func (f *Fishing) watchTask() {
 	for {
 		select {
 		case task := <-f.task:
-			f.runTask(task)
+			typ := f.runTask(task)
+			select {
+			case <-task.Context.Done():
+				f.Info("User manual pause")
+			default:
+				go func(task *Task) {
+					switch typ {
+					case TaskTypeThrowFishingRod:
+						f.start()
+					case TaskTypeWait:
+						f.waitPullHook(task.Context, task.Timeout)
+					}
+				}(task)
+			}
 		}
-		fmt.Println("for")
 	}
 }
 
@@ -65,9 +86,20 @@ func (f *Fishing) watchSwitch() {
 }
 
 func (f *Fishing) start() {
+	f.times++
 	task := new(Task)
+	task.Timeout = time.After(30 * time.Second)
 	task.Type = TaskTypeThrowFishingRod
 	task.Context, f.cancelFunc = context.WithCancel(context.Background())
+	f.task <- task
+}
+
+// 等待拉钩
+func (f *Fishing) waitPullHook(ctx context.Context, timeout <-chan time.Time) {
+	task := new(Task)
+	task.Timeout = timeout
+	task.Type = TaskTypeWait
+	task.Context = ctx
 	f.task <- task
 }
 
@@ -78,29 +110,56 @@ func (f *Fishing) stop() {
 	}
 }
 
-func (f *Fishing) runTask(t *Task) {
+func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskTypeThrowFishingRod:
+		f.Info("Start looking for fish floats")
+		if isFind := f.stepThrowFishingRod(t); isFind {
+			// 找到鱼漂
+			f.Info("Found a fishing float")
+			return TaskTypeWait
+		}
+		f.Info("No fishing float found")
+		return TaskTypeThrowFishingRod
+	case TaskTypeWait:
+		f.Info("Start waiting for the hook")
+		if ok := f.stepWaitPullHook(t); ok {
+			f.Info("Success")
+		} else {
+			f.Info("Fail")
+		}
+		time.Sleep(100 * time.Millisecond)
+		return TaskTypeThrowFishingRod
+	}
+	return TaskTypeThrowFishingRod
+}
+
+func (f *Fishing) stepWaitPullHook(t *Task) bool {
+	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
+	bitmapRef := robotgo.CaptureScreen(f.activeX, f.activeY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+	oldImg := robotgo.ToImage(bitmapRef)
+	for {
 		select {
+		case <-t.Timeout:
+			f.Info("Time out")
+			return false
 		case <-t.Context.Done():
-			log.Println("关闭任务")
-			return
+			return false
 		default:
-			if isFind := f.throwFishingRod(t); isFind {
-				// 找到鱼漂
-			} else {
-				// 未找到鱼漂
-				log.Println("未找到鱼漂")
-				go func() {
-					f.task <- t
-				}()
+			bitmapRef := robotgo.CaptureScreen(f.activeX, f.activeY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+			newImg := robotgo.ToImage(bitmapRef)
+			n := utils.Compared(oldImg, newImg)
+			if n > f.Config.FindThreshold {
+				robotgo.KeyTap("right")
+				return true
 			}
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
 
 // 下竿
-func (f *Fishing) throwFishingRod(t *Task) bool {
+func (f *Fishing) stepThrowFishingRod(t *Task) bool {
 	// 按下下竿按键
 	robotgo.KeyTap("1")
 	time.Sleep(300 * time.Millisecond)
@@ -125,8 +184,10 @@ func (f *Fishing) throwFishingRod(t *Task) bool {
 		r := float64(radius)
 		for radian := 0.0; radian <= utils.Round(2*math.Pi, 5); radian += radianItem {
 			select {
+			case <-t.Timeout:
+				f.Info("Time out")
+				return false
 			case <-t.Context.Done():
-				log.Println("关闭寻找鱼漂")
 				return false
 			default:
 				x := int(math.Cos(radian)*r) + f.screenInfo.ScreenWidth/2
@@ -136,9 +197,11 @@ func (f *Fishing) throwFishingRod(t *Task) bool {
 				if err == ErrOutOfBounds {
 					return false
 				} else if err != nil {
-					log.Println(err)
+					f.Info(err)
 					return false
 				} else if isFind {
+					f.activeX = x
+					f.activeY = y
 					return true
 				}
 			}
@@ -161,8 +224,15 @@ func (f *Fishing) find(x, y int) (bool, error) {
 	}
 	resultImg := robotgo.ToImage(bitmapRef)
 	n := utils.Compared(resultImg, oldImg)
-	if n > f.Config.CompareCoordinate {
+	if n > f.Config.FindThreshold {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (f Fishing) Info(args ...interface{}) {
+	var data []interface{}
+	data = append(data, fmt.Sprintf("Try: [%d]", f.times))
+	data = append(data, args...)
+	log.Println(data)
 }
