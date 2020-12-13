@@ -1,8 +1,11 @@
 package main
 
-import "fish/fishing"
+import (
+	"fish/fishing"
+	"log"
+)
 
 func main() {
 	f := fishing.NewFishing(fishing.NewDefaultConfig())
-	f.Run()
+	log.Fatalln(f.Run())
 }

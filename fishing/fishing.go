@@ -1,6 +1,5 @@
 package fishing
 
-import "C"
 import (
 	"context"
 	"errors"
