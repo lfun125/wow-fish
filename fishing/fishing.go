@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"log"
 	"math"
+	"sort"
 	"strconv"
 	"time"
 
@@ -174,15 +175,16 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	}
 }
 
-//type DiffColorToXY struct {
-//	Diff float64
-//	X, Y int
-//}
+type DiffColorToXY struct {
+	Diff float64
+	X, Y int
+}
 
 // 下竿
 func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeX = 0
 	f.activeY = 0
+	robotgo.Move(0, 0)
 	// 按下下竿按键
 	robotgo.KeyTap("1")
 	time.Sleep(2 * time.Second)
@@ -198,72 +200,66 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	}
 	centerX := f.screenInfo.ScreenWidth / 2
 	centerY := f.screenInfo.ScreenHeight / 2
-	//store := map[float64][]DiffColorToXY{}
-	//var diffKeys []float64
-	var minDifference float64 = 500
+	store := map[float64][]DiffColorToXY{}
+	var diffKeys []float64
 	for xx := -maxRadius; xx <= maxRadius; xx += 10 {
 		for yy := -maxRadius; yy <= maxRadius; yy += 10 {
 			// 色差比较
-			x := xx + centerX
-			y := yy + centerY
-			r, g, b, a := screen.At(x, y).RGBA()
+			var data DiffColorToXY
+			data.X = xx + centerX
+			data.Y = yy + centerY
+			r, g, b, a := screen.At(data.X, data.Y).RGBA()
 			rgba := color.RGBA{
 				R: uint8(r >> 8),
 				G: uint8(g >> 8),
 				B: uint8(b >> 8),
 				A: uint8(a >> 8),
 			}
-			if diff := utils.RGBDifference(f.Config.FloatColor, rgba); diff < minDifference {
-				minDifference = diff
-				f.activeX, f.activeY = x, y
+			data.Diff = utils.RGBDifference(f.Config.FloatColor, rgba)
+			if len(store[data.Diff]) == 0 {
+				diffKeys = append(diffKeys, data.Diff)
 			}
-			//if len(store[data.Diff]) == 0 {
-			//	diffKeys = append(diffKeys, data.Diff)
-			//}
-			//store[data.Diff] = append(store[data.Diff], data)
+			store[data.Diff] = append(store[data.Diff], data)
 		}
 	}
-	//sort.Float64s(diffKeys)
-	//fmt.Println(diffKeys)
-	//// 最大波动值
-	//var maxOscillation float64
-	//var number int
-	//if number = len(diffKeys); number > 10 {
-	//	number = 10
-	//}
-	//for _, v := range diffKeys[0:number] {
-	//	list := store[v]
-	//	var number int
-	//	for _, xy := range list {
-	//		number++
-	//		if number > 3 {
-	//			continue
-	//		}
-	//		select {
-	//		case <-t.Timeout:
-	//			f.Info("Time out")
-	//			return false
-	//		case <-t.Context.Done():
-	//			return false
-	//		default:
-	//			n, err := f.find(xy.X, xy.Y)
-	//			if err == ErrOutOfBounds {
-	//				return false
-	//			} else if err != nil {
-	//				f.Info(err)
-	//				return false
-	//			} else if n > maxOscillation {
-	//				maxOscillation = n
-	//				f.activeX = xy.X
-	//				f.activeY = xy.Y
-	//
-	//			}
-	//		}
-	//	}
-	//}
+	sort.Float64s(diffKeys)
+	// 最大波动值
+	var maxOscillation float64
+	var number int
+	if number = len(diffKeys); number > 3 {
+		number = 3
+	}
+	for _, v := range diffKeys[0:number] {
+		list := store[v]
+		var number int
+		for _, xy := range list {
+			number++
+			if number > 3 {
+				continue
+			}
+			select {
+			case <-t.Timeout:
+				f.Info("Time out")
+				return false
+			case <-t.Context.Done():
+				return false
+			default:
+				n, err := f.find(xy.X, xy.Y)
+				if err == ErrOutOfBounds {
+					return false
+				} else if err != nil {
+					f.Info(err)
+					return false
+				} else if n > maxOscillation {
+					maxOscillation = n
+					f.activeX = xy.X
+					f.activeY = xy.Y
+				}
+			}
+		}
+	}
 	if f.activeX > 0 {
 		robotgo.Move(f.activeX, f.activeY)
-		f.Info(fmt.Sprintf("Fish float degree of difference: %0.4f, x: %d, y: %d", minDifference, f.activeX, f.activeY))
 		return true
 	}
 	return false
