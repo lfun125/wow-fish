@@ -26,7 +26,7 @@ func NewDefaultConfig() *Config {
 		SwitchButton:      "f3",
 		ColorPickerButton: "f4",
 		StepPixel:         50,
-		CompareCoordinate: 120,
+		CompareCoordinate: 40,
 		FindThreshold:     20,
 		InitialRadius:     40,
 		ThrowButton:       "1",
