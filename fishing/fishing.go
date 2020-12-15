@@ -215,8 +215,14 @@ func (f *Fishing) stepThrow(t *Task) bool {
 		list := store[v]
 		fmt.Println(list)
 		for _, v := range list {
-			robotgo.Move(v.X, v.Y)
-			time.Sleep(time.Second)
+			select {
+			case <-t.Timeout:
+				f.Info("Time out")
+				return false
+			default:
+				robotgo.Move(v.X, v.Y)
+				time.Sleep(time.Second)
+			}
 		}
 	}
 	return false
