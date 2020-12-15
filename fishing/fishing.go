@@ -53,6 +53,15 @@ func (f *Fishing) Run() error {
 	select {}
 }
 
+func (f *Fishing) ColorPicker() {
+	for {
+		if ok := robotgo.AddEvent(f.Config.ColorPickerButton); ok {
+			x, y := robotgo.GetMousePos()
+			f.Config.FloatColor = utils.StrToRGBA(robotgo.GetPixelColor(x, y))
+		}
+	}
+}
+
 func (f *Fishing) watchTask() {
 	for task := range f.task {
 		typ := f.runTask(task)
@@ -167,12 +176,14 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 }
 
 type DiffColorToXY struct {
-	Diff int
+	Diff float64
 	X, Y int
 }
 
 // 下竿
 func (f *Fishing) stepThrow(t *Task) bool {
+	f.activeX = 0
+	f.activeY = 0
 	// 按下下竿按键
 	robotgo.KeyTap("1")
 	time.Sleep(2 * time.Second)
@@ -188,8 +199,8 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	}
 	centerX := f.screenInfo.ScreenWidth / 2
 	centerY := f.screenInfo.ScreenHeight / 2
-	store := map[int][]DiffColorToXY{}
-	var diffKeys []int
+	store := map[float64][]DiffColorToXY{}
+	var diffKeys []float64
 	for xx := -maxRadius; xx <= maxRadius; xx += 10 {
 		for yy := -maxRadius; yy <= maxRadius; yy += 10 {
 			// 色差比较
@@ -210,10 +221,14 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			store[data.Diff] = append(store[data.Diff], data)
 		}
 	}
-	sort.Ints(diffKeys)
-	findDiff := map[int]DiffColorToXY{}
-	var maxDiff int
-	for _, v := range diffKeys[0:10] {
+	sort.Float64s(diffKeys)
+	// 最大波动值
+	var maxOscillation float64
+	var number int
+	if number = len(diffKeys); number > 10 {
+		number = 10
+	}
+	for _, v := range diffKeys[0:number] {
 		list := store[v]
 		var number int
 		for _, v := range list {
@@ -234,22 +249,15 @@ func (f *Fishing) stepThrow(t *Task) bool {
 				} else if err != nil {
 					f.Info(err)
 					return false
-				} else {
-					findDiff[n] = v
-					if n > maxDiff {
-						maxDiff = n
-					}
+				} else if n > maxOscillation {
+					maxOscillation = n
+					f.activeX = v.X
+					f.activeY = v.Y
 				}
 			}
 		}
 	}
-	if xy, ok := findDiff[maxDiff]; ok {
-		f.activeX = xy.X
-		f.activeY = xy.Y
-		robotgo.Move(f.activeX, f.activeY)
-		return true
-	}
-	return false
+	return f.activeX > 0
 }
 
 // 下竿
@@ -333,7 +341,7 @@ func (f *Fishing) stepThrowFishingRod(t *Task) bool {
 	return false
 }
 
-func (f *Fishing) find(x, y int) (int, error) {
+func (f *Fishing) find(x, y int) (float64, error) {
 	cutX := x - f.Config.CompareCoordinate/2
 	cutY := y - f.Config.CompareCoordinate/2
 	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
@@ -350,7 +358,7 @@ func (f *Fishing) find(x, y int) (int, error) {
 	// utils.SavePng(fmt.Sprintf("%d_%d_2.png", cutX, cutY), oldImg)
 	n := utils.Compared(resultImg, oldImg)
 	// fmt.Println("wait", n)
-	return n, nil
+	return float64(n), nil
 }
 
 func (f Fishing) Info(args ...interface{}) {

@@ -5,6 +5,8 @@ import "image/color"
 type Config struct {
 	// 开关按键
 	SwitchButton string
+	// 取色器按钮
+	ColorPickerButton string
 	// 每一步移动弧度
 	StepPixel int
 	// 对比区域坐标
@@ -22,6 +24,7 @@ type Config struct {
 func NewDefaultConfig() *Config {
 	return &Config{
 		SwitchButton:      "f3",
+		ColorPickerButton: "f4",
 		StepPixel:         50,
 		CompareCoordinate: 120,
 		FindThreshold:     20,
@@ -31,7 +34,6 @@ func NewDefaultConfig() *Config {
 			R: 255,
 			G: 243,
 			B: 167,
-			A: 0,
 		},
 	}
 }
