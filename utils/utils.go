@@ -52,7 +52,7 @@ func Round(val float64, places int) float64 {
 func Compared(before, after image.Image) float64 {
 	rgb1 := averageColor(before)
 	rgb2 := averageColor(after)
-	return RGBDifference(rgb1, rgb2)
+	return math.Abs(float64(rgb1.R)-float64(rgb2.R)) + math.Abs(float64(rgb1.G)-float64(rgb2.G)) + math.Abs(float64(rgb1.B)-float64(rgb2.B))
 }
 
 func averageColor(img image.Image) (rgba color.RGBA) {

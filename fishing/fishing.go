@@ -152,7 +152,6 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 	oldImg := robotgo.ToImage(bitmapRef)
 	utils.SavePng("watch.png", oldImg)
-	var okTimes int
 	for {
 		select {
 		case <-t.Timeout:
@@ -165,12 +164,9 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newImg := robotgo.ToImage(bitmapRef)
 			n := utils.Compared(oldImg, newImg)
 			f.Info("Compared value:", n)
-			if n >= 300 {
-				okTimes++
-				if okTimes > 4 {
-					robotgo.MouseClick("right")
-					return true
-				}
+			if n >= 20 {
+				robotgo.MouseClick("right")
+				return true
 			}
 			time.Sleep(50 * time.Millisecond)
 		}
