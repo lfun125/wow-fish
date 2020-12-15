@@ -167,7 +167,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 }
 
 type DiffColorToXY struct {
-	Diff float64
+	Diff int
 	X, Y int
 }
 
@@ -188,8 +188,8 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	}
 	centerX := f.screenInfo.ScreenWidth / 2
 	centerY := f.screenInfo.ScreenHeight / 2
-	store := map[float64][]DiffColorToXY{}
-	var diffKeys []float64
+	store := map[int][]DiffColorToXY{}
+	var diffKeys []int
 	for xx := -maxRadius; xx <= maxRadius; xx += 10 {
 		for yy := -maxRadius; yy <= maxRadius; yy += 10 {
 			// 色差比较
@@ -210,7 +210,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			store[data.Diff] = append(store[data.Diff], data)
 		}
 	}
-	sort.Float64s(diffKeys)
+	sort.Ints(diffKeys)
 	for _, v := range diffKeys[0:10] {
 		list := store[v]
 		fmt.Println(list)

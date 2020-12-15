@@ -107,42 +107,11 @@ func averageColor(img image.Image) (r, g, b uint32) {
 	return
 }
 
-func RGBDifference(v1, v2 color.RGBA) float64 {
-	transform := func(v float64) float64 {
-		if v == 0 {
-			v = 1
-		}
-		return v
-	}
-	r1 := transform(math.Abs(float64(v1.R)))
-	g1 := transform(math.Abs(float64(v1.G)))
-	b1 := transform(math.Abs(float64(v1.B)))
-	r2 := transform(math.Abs(float64(v2.R)))
-	g2 := transform(math.Abs(float64(v2.G)))
-	b2 := transform(math.Abs(float64(v2.B)))
-	var d1, d2 float64
-	if r1 > g1 {
-		d1 += r1 / g1
-	} else {
-		d1 += g1 / r1
-	}
-	if r1 > b1 {
-		d1 += r1 / b1
-	} else {
-		d1 += b1 / r1
-	}
-
-	if r2 > g2 {
-		d2 += r2 / g2
-	} else {
-		d2 += g2 / r2
-	}
-	if r2 > b2 {
-		d2 += r2 / b2
-	} else {
-		d1 += b2 / r2
-	}
-	return math.Abs(d1 - d2)
+func RGBDifference(v1, v2 color.RGBA) int {
+	v := math.Abs(float64(v1.R-v2.R)) +
+		math.Abs(float64(v1.G-v2.G)) +
+		math.Abs(float64(v1.B-v2.B))
+	return int(v)
 }
 
 func StrToRGBA(colorStr string) color.RGBA {
