@@ -145,6 +145,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 }
 
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
+	time.Sleep(time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	width := f.Config.CompareCoordinate
 	x := f.activeX - width/2
