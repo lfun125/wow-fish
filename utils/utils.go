@@ -49,14 +49,13 @@ func Round(val float64, places int) float64 {
 	return float64(int64(val*f+0.5)) / f
 }
 
-func Compared(before, after image.Image) int {
-	r1, g1, b1 := averageColor(before)
-	r2, g2, b2 := averageColor(after)
-	n := int(math.Abs(float64(r1)-float64(r2)) + math.Abs(float64(g1)-float64(g2)) + math.Abs(float64(b1)-float64(b2)))
-	return n
+func Compared(before, after image.Image) float64 {
+	rgb1 := averageColor(before)
+	rgb2 := averageColor(after)
+	return RGBDifference(rgb1, rgb2)
 }
 
-func averageColor(img image.Image) (r, g, b uint32) {
+func averageColor(img image.Image) (rgba color.RGBA) {
 	rect := img.Bounds()
 	with := rect.Size().X
 	height := rect.Size().Y
@@ -101,9 +100,9 @@ func averageColor(img image.Image) (r, g, b uint32) {
 		tg += uint64(v.G)
 		tb += uint64(v.B)
 	}
-	r = uint32(tr / tol)
-	g = uint32(tg / tol)
-	b = uint32(tb / tol)
+	rgba.R = uint8(tr / tol)
+	rgba.G = uint8(tg / tol)
+	rgba.B = uint8(tb / tol)
 	return
 }
 
