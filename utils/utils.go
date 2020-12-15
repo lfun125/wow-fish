@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -111,4 +112,20 @@ func RGBDifference(v1, v2 color.RGBA) int {
 		math.Abs(float64(v1.G-v2.G)) +
 		math.Abs(float64(v1.B-v2.B))
 	return int(v)
+}
+
+func StrToRGBA(colorStr string) color.RGBA {
+	var data color.RGBA
+	if len(colorStr) == 6 {
+		rs := colorStr[0:2]
+		gs := colorStr[2:4]
+		bs := colorStr[4:]
+		rr, _ := strconv.ParseInt(rs, 16, 64)
+		gg, _ := strconv.ParseInt(gs, 16, 64)
+		bb, _ := strconv.ParseInt(bs, 16, 64)
+		data.R = uint8(rr)
+		data.G = uint8(gg)
+		data.B = uint8(bb)
+	}
+	return data
 }
