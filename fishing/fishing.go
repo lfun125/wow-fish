@@ -5,10 +5,14 @@ import (
 	"errors"
 	"fish/utils"
 	"fmt"
+	"image/color"
 	"log"
 	"math"
+	"sort"
 	"strconv"
 	"time"
+
+	"github.com/nfnt/resize"
 
 	"github.com/go-vgo/robotgo"
 )
@@ -112,7 +116,8 @@ func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskTypeThrowFishingRod:
 		f.Info("Start looking for fish floats")
-		if isFind := f.stepThrowFishingRod(t); isFind {
+		//if isFind := f.stepThrowFishingRod(t); isFind {
+		if isFind := f.stepThrow(t); isFind {
 			// 找到鱼漂
 			f.Info("Found a fishing float")
 			return TaskTypeWait
@@ -159,6 +164,60 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
+}
+
+type DiffColorToXY struct {
+	Diff int
+	X, Y int
+}
+
+// 下竿
+func (f *Fishing) stepThrow(t *Task) bool {
+	// 按下下竿按键
+	robotgo.KeyTap("1")
+	time.Sleep(300 * time.Millisecond)
+	// 截屏
+	screen := robotgo.ToImage(robotgo.CaptureScreen())
+	// 缩放
+	screen = resize.Resize(uint(f.screenInfo.ScreenWidth), uint(f.screenInfo.ScreenHeight), screen, resize.NearestNeighbor)
+	var maxRadius int
+	if f.screenInfo.ScreenWidth > f.screenInfo.ScreenHeight {
+		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 2.5)
+	} else {
+		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 2.5)
+	}
+	store := map[int][]DiffColorToXY{}
+	var diffKeys []int
+	for x := -maxRadius; x <= maxRadius; x += 10 {
+		for y := -maxRadius; y <= maxRadius; y += 10 {
+			// 色差比较
+			var data DiffColorToXY
+			data.X = x
+			data.Y = y
+			r, g, b, a := screen.At(x, y).RGBA()
+			rgba := color.RGBA{
+				R: uint8(r >> 8),
+				G: uint8(g >> 8),
+				B: uint8(b >> 8),
+				A: uint8(a >> 8),
+			}
+			data.Diff = utils.RGBDifference(f.Config.FloatColor, rgba)
+			if len(store[data.Diff]) == 0 {
+				diffKeys = append(diffKeys, data.Diff)
+			}
+			store[data.Diff] = append(store[data.Diff], data)
+		}
+	}
+	sort.Ints(diffKeys)
+	for _, v := range diffKeys[0:10] {
+		list := store[v]
+		fmt.Println(list)
+		for _, v := range list {
+			robotgo.Move(v.X, v.Y)
+			time.Sleep(time.Second)
+		}
+	}
+	return false
 }
 
 // 下竿

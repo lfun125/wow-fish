@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"image"
+	"image/color"
 	"image/png"
 	"log"
 	"math"
@@ -23,7 +24,6 @@ func CutImage(src image.Image, x, y, w, h int) (image.Image, error) {
 	} else {
 		return subImg, errors.New("图片解码失败")
 	}
-
 	return subImg, nil
 }
 
@@ -104,4 +104,11 @@ func averageColor(img image.Image) (r, g, b uint32) {
 	g = uint32(tg / tol)
 	b = uint32(tb / tol)
 	return
+}
+
+func RGBDifference(v1, v2 color.RGBA) int {
+	v := math.Abs(float64(v1.R-v2.R)) +
+		math.Abs(float64(v1.G-v2.G)) +
+		math.Abs(float64(v1.B-v2.B))
+	return int(v)
 }

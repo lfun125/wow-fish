@@ -1,5 +1,7 @@
 package fishing
 
+import "image/color"
+
 type Config struct {
 	// 开关按键
 	SwitchButton string
@@ -13,6 +15,8 @@ type Config struct {
 	InitialRadius int
 	// 抛竿按键
 	ThrowButton string
+	// 鱼漂颜色
+	FloatColor color.RGBA
 }
 
 func NewDefaultConfig() *Config {
@@ -23,5 +27,11 @@ func NewDefaultConfig() *Config {
 		FindThreshold:     20,
 		InitialRadius:     40,
 		ThrowButton:       "1",
+		FloatColor: color.RGBA{
+			R: 255,
+			G: 243,
+			B: 167,
+			A: 0,
+		},
 	}
 }
