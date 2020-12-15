@@ -222,6 +222,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 		}
 	}
 	sort.Float64s(diffKeys)
+	fmt.Println(diffKeys)
 	// 最大波动值
 	var maxOscillation float64
 	var number int
@@ -231,7 +232,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	for _, v := range diffKeys[0:number] {
 		list := store[v]
 		var number int
-		for _, v := range list {
+		for _, xy := range list {
 			number++
 			if number > 3 {
 				continue
@@ -243,7 +244,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			case <-t.Context.Done():
 				return false
 			default:
-				n, err := f.find(v.X, v.Y)
+				n, err := f.find(xy.X, xy.Y)
 				if err == ErrOutOfBounds {
 					return false
 				} else if err != nil {
@@ -251,8 +252,8 @@ func (f *Fishing) stepThrow(t *Task) bool {
 					return false
 				} else if n > maxOscillation {
 					maxOscillation = n
-					f.activeX = v.X
-					f.activeY = v.Y
+					f.activeX = xy.X
+					f.activeY = xy.Y
 				}
 			}
 		}
