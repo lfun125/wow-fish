@@ -211,10 +211,16 @@ func (f *Fishing) stepThrow(t *Task) bool {
 		}
 	}
 	sort.Ints(diffKeys)
+	findDiff := map[int]DiffColorToXY{}
+	var maxDiff int
 	for _, v := range diffKeys[0:10] {
 		list := store[v]
-		fmt.Println(list)
+		var number int
 		for _, v := range list {
+			number++
+			if number > 3 {
+				continue
+			}
 			select {
 			case <-t.Timeout:
 				f.Info("Time out")
@@ -222,20 +228,26 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			case <-t.Context.Done():
 				return false
 			default:
-				isFind, err := f.find(v.X, v.Y)
+				n, err := f.find(v.X, v.Y)
 				if err == ErrOutOfBounds {
 					return false
 				} else if err != nil {
 					f.Info(err)
 					return false
-				} else if isFind {
-					f.activeX = v.X
-					f.activeY = v.Y
-					robotgo.Move(f.activeX, f.activeY)
-					return true
+				} else {
+					findDiff[n] = v
+					if n > maxDiff {
+						maxDiff = n
+					}
 				}
 			}
 		}
+	}
+	if xy, ok := findDiff[maxDiff]; ok {
+		f.activeX = xy.X
+		f.activeY = xy.Y
+		robotgo.Move(f.activeX, f.activeY)
+		return true
 	}
 	return false
 }
@@ -281,7 +293,7 @@ func (f *Fishing) stepThrowFishingRod(t *Task) bool {
 				} else if err != nil {
 					f.Info(err)
 					return false
-				} else if isFind {
+				} else if isFind > 20 {
 					// 找到最红得位置
 					var maxRed int64
 					rx, ry := x, y
@@ -321,7 +333,7 @@ func (f *Fishing) stepThrowFishingRod(t *Task) bool {
 	return false
 }
 
-func (f *Fishing) find(x, y int) (bool, error) {
+func (f *Fishing) find(x, y int) (int, error) {
 	cutX := x - f.Config.CompareCoordinate/2
 	cutY := y - f.Config.CompareCoordinate/2
 	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
@@ -331,17 +343,14 @@ func (f *Fishing) find(x, y int) (bool, error) {
 	// 移动后对比图片
 	bitmapRef = robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
 	if bitmapRef == nil {
-		return false, ErrOutOfBounds
+		return 0, ErrOutOfBounds
 	}
 	resultImg := robotgo.ToImage(bitmapRef)
 	// utils.SavePng(fmt.Sprintf("%d_%d_1.png", cutX, cutY), oldImg)
 	// utils.SavePng(fmt.Sprintf("%d_%d_2.png", cutX, cutY), oldImg)
 	n := utils.Compared(resultImg, oldImg)
 	// fmt.Println("wait", n)
-	if n >= 20 {
-		return true, nil
-	}
-	return false, nil
+	return n, nil
 }
 
 func (f Fishing) Info(args ...interface{}) {
