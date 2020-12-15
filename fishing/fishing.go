@@ -219,6 +219,8 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			case <-t.Timeout:
 				f.Info("Time out")
 				return false
+			case <-t.Context.Done():
+				return false
 			default:
 				robotgo.Move(v.X, v.Y)
 				time.Sleep(time.Second)
