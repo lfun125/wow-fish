@@ -186,15 +186,17 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	} else {
 		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 2.5)
 	}
+	centerX := f.screenInfo.ScreenWidth / 2
+	centerY := f.screenInfo.ScreenHeight / 2
 	store := map[int][]DiffColorToXY{}
 	var diffKeys []int
-	for x := -maxRadius; x <= maxRadius; x += 10 {
-		for y := -maxRadius; y <= maxRadius; y += 10 {
+	for xx := -maxRadius; xx <= maxRadius; xx += 10 {
+		for yy := -maxRadius; yy <= maxRadius; yy += 10 {
 			// 色差比较
 			var data DiffColorToXY
-			data.X = x
-			data.Y = y
-			r, g, b, a := screen.At(x, y).RGBA()
+			data.X = xx + centerX
+			data.Y = yy + centerY
+			r, g, b, a := screen.At(data.X, data.Y).RGBA()
 			rgba := color.RGBA{
 				R: uint8(r >> 8),
 				G: uint8(g >> 8),
