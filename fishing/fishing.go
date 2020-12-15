@@ -175,7 +175,7 @@ type DiffColorToXY struct {
 func (f *Fishing) stepThrow(t *Task) bool {
 	// 按下下竿按键
 	robotgo.KeyTap("1")
-	time.Sleep(600 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 	// 截屏
 	screen := robotgo.ToImage(robotgo.CaptureScreen())
 	// 缩放
