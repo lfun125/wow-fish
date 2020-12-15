@@ -222,8 +222,18 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			case <-t.Context.Done():
 				return false
 			default:
-				robotgo.Move(v.X, v.Y)
-				time.Sleep(time.Second)
+				isFind, err := f.find(v.X, v.Y)
+				if err == ErrOutOfBounds {
+					return false
+				} else if err != nil {
+					f.Info(err)
+					return false
+				} else if isFind {
+					f.activeX = v.X
+					f.activeY = v.Y
+					robotgo.Move(f.activeX, f.activeY)
+					return true
+				}
 			}
 		}
 	}
