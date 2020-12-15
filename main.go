@@ -8,6 +8,6 @@ import (
 func main() {
 	c := fishing.NewDefaultConfig()
 	f := fishing.NewFishing(c)
-	go f.ColorPicker()
+	f.ColorPicker()
 	log.Fatalln(f.Run())
 }

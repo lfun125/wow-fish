@@ -54,11 +54,9 @@ func (f *Fishing) Run() error {
 }
 
 func (f *Fishing) ColorPicker() {
-	for {
-		if ok := robotgo.AddEvent(f.Config.ColorPickerButton); ok {
-			x, y := robotgo.GetMousePos()
-			f.Config.FloatColor = utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-		}
+	if ok := robotgo.AddEvent(f.Config.ColorPickerButton); ok {
+		x, y := robotgo.GetMousePos()
+		f.Config.FloatColor = utils.StrToRGBA(robotgo.GetPixelColor(x, y))
 	}
 }
 
