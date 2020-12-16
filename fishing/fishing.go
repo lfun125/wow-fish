@@ -161,7 +161,6 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
 			distance := utils.Compared(oldImg, newImg)
-			f.Info(fmt.Sprintf("Compared distance value:%0.2v-%v", okTimes, distance))
 			if distance >= f.Config.Distance {
 				okTimes += math.Ceil(2 * distance / f.Config.Distance)
 			} else {
@@ -170,6 +169,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 					okTimes = 0
 				}
 			}
+			f.Info(fmt.Sprintf("Compared distance value:%0.2v-%v", okTimes, distance))
 			if okTimes > 2 {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
