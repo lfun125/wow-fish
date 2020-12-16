@@ -162,13 +162,18 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			distance := utils.Compared(oldImg, newImg)
 			f.Info("Compared distance value:", distance)
 			if distance >= f.Config.Distance {
-				okTimes++
-				if okTimes > 1 {
+				okTimes += 2
+				if okTimes > 2 {
 					robotgo.Move(f.activeX, f.activeY)
 					robotgo.MouseClick("right")
 					robotgo.MouseClick("f1")
 					robotgo.Move(0, 0)
 					return true
+				} else {
+					okTimes--
+					if okTimes < 0 {
+						okTimes = 0
+					}
 				}
 			}
 			time.Sleep(200 * time.Millisecond)
