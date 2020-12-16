@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image/color"
 	"log"
-	"math"
 	"sort"
 	"time"
 
@@ -162,7 +161,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newImg := robotgo.ToImage(bitmapRef)
 			distance := utils.Compared(oldImg, newImg)
 			if distance >= f.Config.Distance {
-				okTimes += math.Ceil(2 * distance / f.Config.Distance)
+				okTimes += 2 * distance / f.Config.Distance
 			} else {
 				okTimes--
 				if okTimes < 0 {
