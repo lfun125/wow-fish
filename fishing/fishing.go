@@ -166,7 +166,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 				robotgo.MouseClick("right")
 				return true
 			}
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 		}
 	}
 }
