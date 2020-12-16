@@ -17,7 +17,6 @@ import (
 
 var (
 	ErrOutOfBounds = errors.New("Out of bounds ")
-	ErrClose       = errors.New("user close")
 )
 
 type Fishing struct {
@@ -159,9 +158,9 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 		default:
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
-			n := utils.Compared(oldImg, newImg)
-			f.Info("Compared value:", n)
-			if n >= 0.1 {
+			distance := utils.Compared(oldImg, newImg)
+			f.Info("Compared distance value:", distance)
+			if distance >= f.Config.Distance {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
 				robotgo.MouseClick("f1")
@@ -242,14 +241,14 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			case <-t.Context.Done():
 				return false
 			default:
-				n, err := f.find(xy.X, xy.Y)
+				distance, err := f.getRGBDistance(xy.X, xy.Y)
 				if err == ErrOutOfBounds {
 					return false
 				} else if err != nil {
 					f.Info(err)
 					return false
-				} else if n > maxOscillation {
-					maxOscillation = n
+				} else if distance > maxOscillation {
+					maxOscillation = distance
 					f.activeX = xy.X
 					f.activeY = xy.Y
 				}
@@ -266,7 +265,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	return false
 }
 
-func (f *Fishing) find(x, y int) (float64, error) {
+func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 	cutX := x - f.Config.CompareCoordinate/2
 	cutY := y - f.Config.CompareCoordinate/2
 	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
