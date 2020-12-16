@@ -2,6 +2,7 @@ package main
 
 import (
 	"fish/fishing"
+	"fmt"
 	"log"
 )
 
@@ -10,6 +11,6 @@ func main() {
 	c.ParseParams()
 	f := fishing.NewFishing(c)
 	f.ColorPicker()
-	f.Info("Config: %+v\n", c)
+	f.Info(fmt.Sprintf("Config: %+v\n", c))
 	log.Fatalln(f.Run())
 }
