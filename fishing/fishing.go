@@ -141,7 +141,10 @@ func (f *Fishing) runTask(t *Task) TaskType {
 	return TaskTypeThrowFishingRod
 }
 
+// 等待鱼上钩
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
+	// 按以下清楚垃圾开河蚌的宏
+	robotgo.KeyTap("2")
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	width := f.Config.CompareCoordinate
