@@ -164,6 +164,8 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			if n >= 0.1 {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
+				robotgo.MouseClick("f1")
+				robotgo.Move(0, 0)
 				return true
 			}
 			time.Sleep(200 * time.Millisecond)
