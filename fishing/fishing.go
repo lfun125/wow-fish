@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"sort"
 	"time"
 
@@ -162,7 +163,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			distance := utils.Compared(oldImg, newImg)
 			f.Info("Compared distance value:", distance)
 			if distance >= f.Config.Distance {
-				okTimes += 2
+				okTimes += int(math.Ceil(2 * distance / f.Config.Distance))
 				if okTimes > 2 {
 					robotgo.Move(f.activeX, f.activeY)
 					robotgo.MouseClick("right")
