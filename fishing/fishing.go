@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
-	"math"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/nfnt/resize"
@@ -145,14 +143,12 @@ func (f *Fishing) runTask(t *Task) TaskType {
 }
 
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	width := f.Config.CompareCoordinate
 	x := f.activeX - width/2
 	y := f.activeY - width/2
-	bitmapRef := robotgo.CaptureScreen(x, y, width, width)
-	oldImg := robotgo.ToImage(bitmapRef)
-	utils.SavePng("watch.png", oldImg)
+	oldImg := robotgo.ToImage(robotgo.CaptureScreen(x, y, width, width))
 	for {
 		select {
 		case <-t.Timeout:
@@ -165,10 +161,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newImg := robotgo.ToImage(bitmapRef)
 			n := utils.Compared(oldImg, newImg)
 			f.Info("Compared value:", n)
-			if n >= 20 {
-				robotgo.MouseClick("right")
-				return true
-			}
+			f.Info("------>", n)
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
@@ -264,87 +257,6 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	return false
 }
 
-// 下竿
-func (f *Fishing) stepThrowFishingRod(t *Task) bool {
-	// 按下下竿按键
-	robotgo.KeyTap("1")
-	time.Sleep(300 * time.Millisecond)
-	// 最小半径 最大半径
-	var minRadius, maxRadius int
-	minRadius = f.Config.InitialRadius
-	if f.screenInfo.ScreenWidth > f.screenInfo.ScreenHeight {
-		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 2.5)
-	} else {
-		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 2.5)
-	}
-	for radius := minRadius; radius <= maxRadius; radius += f.Config.StepPixel {
-		nextRadius := radius + f.Config.StepPixel
-		// 周长
-		cir := 2 * math.Pi * float64(nextRadius)
-		// 转一圈需要几次
-		n := cir / float64(f.Config.StepPixel)
-		// 半径递增
-		incR := float64(f.Config.StepPixel) / n
-		// 单次弧度
-		radianItem := utils.Round(2*math.Pi/n, 5)
-		r := float64(radius)
-		for radian := 0.0; radian <= utils.Round(2*math.Pi, 5); radian += radianItem {
-			select {
-			case <-t.Timeout:
-				f.Info("Time out")
-				return false
-			case <-t.Context.Done():
-				return false
-			default:
-				x := int(math.Cos(radian)*r) + f.screenInfo.ScreenWidth/2
-				y := int(math.Sin(radian)*r) + f.screenInfo.ScreenHeight/2
-				r += incR
-				isFind, err := f.find(x, y)
-				if err == ErrOutOfBounds {
-					return false
-				} else if err != nil {
-					f.Info(err)
-					return false
-				} else if isFind > 20 {
-					// 找到最红得位置
-					var maxRed int64
-					rx, ry := x, y
-					tx, ty := x-f.Config.StepPixel/2, y-f.Config.StepPixel/2
-					for i := 0; i < f.Config.StepPixel; i += 10 {
-						for ii := 0; ii < f.Config.StepPixel; ii += 10 {
-							colorStr := robotgo.GetPixelColor(tx, ty)
-							// var red int64
-							if len(colorStr) == 6 {
-								rs := colorStr[0:2]
-								gs := colorStr[2:4]
-								bs := colorStr[4:]
-								rr, _ := strconv.ParseInt(rs, 16, 64)
-								gg, _ := strconv.ParseInt(gs, 16, 64)
-								bb, _ := strconv.ParseInt(bs, 16, 64)
-								if rr+gg+bb > maxRed {
-									maxRed = rr + gg + bb
-									rx, ry = tx, ty
-								}
-								// fmt.Println("coc", tx, ty, colorStr, rs, gs, bs)
-							}
-
-							ty++
-						}
-						tx++
-						ty = y - f.Config.StepPixel/2
-					}
-
-					f.activeX = rx
-					f.activeY = ry
-					robotgo.Move(f.activeX, f.activeY)
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
 func (f *Fishing) find(x, y int) (float64, error) {
 	cutX := x - f.Config.CompareCoordinate/2
 	cutY := y - f.Config.CompareCoordinate/2
@@ -358,11 +270,8 @@ func (f *Fishing) find(x, y int) (float64, error) {
 		return 0, ErrOutOfBounds
 	}
 	resultImg := robotgo.ToImage(bitmapRef)
-	// utils.SavePng(fmt.Sprintf("%d_%d_1.png", cutX, cutY), oldImg)
-	// utils.SavePng(fmt.Sprintf("%d_%d_2.png", cutX, cutY), oldImg)
 	n := utils.Compared(resultImg, oldImg)
-	// fmt.Println("wait", n)
-	return float64(n), nil
+	return n, nil
 }
 
 func (f Fishing) Info(args ...interface{}) {
