@@ -32,7 +32,7 @@ func NewDefaultConfig() *Config {
 		FindThreshold:     20,
 		InitialRadius:     40,
 		ThrowButton:       "1",
-		Luminance:         5,
+		Luminance:         4,
 		FloatColor: color.RGBA{
 			R: 255,
 			G: 243,
