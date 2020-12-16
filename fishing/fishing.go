@@ -169,7 +169,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 					okTimes = 0
 				}
 			}
-			f.Info(fmt.Sprintf("Compared distance value:%0.2v-%v", okTimes, distance))
+			f.Info(fmt.Sprintf("Compared distance value:%0.2f-%f", okTimes, distance))
 			if okTimes > 2 {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
