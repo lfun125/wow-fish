@@ -48,12 +48,7 @@ func Round(val float64, places int) float64 {
 	return float64(int64(val*f+0.5)) / f
 }
 
-func ComparedLuminance(before, after image.Image) float64 {
-	y1 := AverageLuminance(before)
-	y2 := AverageLuminance(after)
-	return y2 - y1
-}
-
+// 图片平均明亮度
 func AverageLuminance(img image.Image) (luminance float64) {
 	rect := img.Bounds()
 	with := rect.Size().X
