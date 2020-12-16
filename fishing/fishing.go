@@ -172,7 +172,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 				robotgo.MouseClick("f1")
 				robotgo.Move(0, 0)
 				return true
-			} else {
+			} else if diff < f.Config.Luminance/4 {
 				oldLuminance = newLuminance
 			}
 			time.Sleep(200 * time.Millisecond)
