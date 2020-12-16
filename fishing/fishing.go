@@ -161,7 +161,11 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newImg := robotgo.ToImage(bitmapRef)
 			n := utils.Compared(oldImg, newImg)
 			f.Info("Compared value:", n)
-			f.Info("------>", n)
+			if n >= 0.4 {
+				robotgo.Move(f.activeX, f.activeY)
+				robotgo.MouseClick("right")
+				return true
+			}
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
