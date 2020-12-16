@@ -277,6 +277,23 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	return false
 }
 
+func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
+	cutX := x - f.Config.CompareCoordinate/2
+	cutY := y - f.Config.CompareCoordinate/2
+	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+	oldImg := robotgo.ToImage(bitmapRef)
+	robotgo.Move(x, y)
+	time.Sleep(20 * time.Millisecond)
+	// 移动后对比图片
+	bitmapRef = robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+	if bitmapRef == nil {
+		return 0, ErrOutOfBounds
+	}
+	resultImg := robotgo.ToImage(bitmapRef)
+	n := utils.Compared(resultImg, oldImg)
+	return n, nil
+}
+
 func (f *Fishing) ComparedLuminance(x, y int) (float64, error) {
 	cutX := x - f.Config.CompareCoordinate/2
 	cutY := y - f.Config.CompareCoordinate/2
