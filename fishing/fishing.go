@@ -151,6 +151,8 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	x := f.activeX - width/2
 	y := f.activeY - width/2
 	oldImg := robotgo.ToImage(robotgo.CaptureScreen(x, y, width, width))
+	// 图片明亮度
+	oldLuminance := utils.AverageLuminance(oldImg)
 	for {
 		select {
 		case <-t.Timeout:
@@ -161,14 +163,17 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 		default:
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
-			distance := utils.ComparedLuminance(oldImg, newImg)
-			f.Info(fmt.Sprintf("Compared luminance: %0.4f", distance))
-			if distance >= f.Config.Luminance {
+			newLuminance := utils.AverageLuminance(newImg)
+			diff := newLuminance - oldLuminance
+			f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
+			if diff >= f.Config.Luminance {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
 				robotgo.MouseClick("f1")
 				robotgo.Move(0, 0)
 				return true
+			} else {
+				oldLuminance = newLuminance
 			}
 			time.Sleep(200 * time.Millisecond)
 		}
