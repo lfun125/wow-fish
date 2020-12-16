@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"image"
-	"image/color"
 	"image/png"
 	"log"
 	"math"
@@ -48,14 +47,14 @@ func Round(val float64, places int) float64 {
 	return float64(int64(val*f+0.5)) / f
 }
 
-func Compared(before, after image.Image) float64 {
-	rgb1 := averageColor(before)
-	rgb2 := averageColor(after)
+func ComparedLuminance(before, after image.Image) float64 {
+	y1 := averageLuminance(before)
+	y2 := averageLuminance(after)
 	//return math.Abs(float64(rgb1.R)-float64(rgb2.R)) + math.Abs(float64(rgb1.G)-float64(rgb2.G)) + math.Abs(float64(rgb1.B)-float64(rgb2.B))
-	return RGBDistance(rgb1, rgb2)
+	return y2 - y1
 }
 
-func averageColor(img image.Image) (rgba color.RGBA) {
+func averageLuminance(img image.Image) (luminance float64) {
 	rect := img.Bounds()
 	with := rect.Size().X
 	height := rect.Size().Y
@@ -93,15 +92,11 @@ func averageColor(img image.Image) (rgba color.RGBA) {
 		wt.Wait()
 		close(chResult)
 	}()
-	var tr, tg, tb, tol uint64
+	var y, tol float64
 	for v := range chResult {
 		tol++
-		tr += uint64(v.R)
-		tg += uint64(v.G)
-		tb += uint64(v.B)
+		y += 0.299*float64(v.R) + 0.587*float64(v.G) + 0.114*float64(v.B)
 	}
-	rgba.R = uint8(tr / tol)
-	rgba.G = uint8(tg / tol)
-	rgba.B = uint8(tb / tol)
+	luminance = y / tol
 	return
 }

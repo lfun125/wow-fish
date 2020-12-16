@@ -162,7 +162,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 		default:
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
-			distance := utils.Compared(oldImg, newImg)
+			distance := utils.ComparedLuminance(oldImg, newImg)
 			if distance >= f.Config.Distance {
 				okTimes += 2 * distance / f.Config.Distance
 			} else {
@@ -277,7 +277,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	return false
 }
 
-func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
+func (f *Fishing) ComparedLuminance(x, y int) (float64, error) {
 	cutX := x - f.Config.CompareCoordinate/2
 	cutY := y - f.Config.CompareCoordinate/2
 	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
@@ -290,7 +290,7 @@ func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 		return 0, ErrOutOfBounds
 	}
 	resultImg := robotgo.ToImage(bitmapRef)
-	n := utils.Compared(resultImg, oldImg)
+	n := utils.ComparedLuminance(resultImg, oldImg)
 	return n, nil
 }
 
