@@ -10,5 +10,6 @@ func main() {
 	c.ParseParams()
 	f := fishing.NewFishing(c)
 	f.ColorPicker()
+	f.Info("Config: %+v\n", c)
 	log.Fatalln(f.Run())
 }
