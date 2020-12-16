@@ -185,7 +185,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	robotgo.Move(0, 0)
 	// 按下下竿按键
 	robotgo.KeyTap("1")
-	time.Sleep(3 * time.Second)
+	time.Sleep(4 * time.Second)
 	// 截屏
 	screen := robotgo.ToImage(robotgo.CaptureScreen())
 	// 缩放
@@ -256,7 +256,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			}
 		}
 	}
-	if f.activeY <= 0 {
+	if f.activeY >= f.screenInfo.ScreenHeight/2 {
 		return false
 	}
 	if f.activeX > 0 {
