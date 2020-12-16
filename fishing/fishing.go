@@ -164,18 +164,18 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			f.Info(fmt.Sprintf("Compared distance value:%0.2v-%v", okTimes, distance))
 			if distance >= f.Config.Distance {
 				okTimes += math.Ceil(2 * distance / f.Config.Distance)
-				if okTimes > 2 {
-					robotgo.Move(f.activeX, f.activeY)
-					robotgo.MouseClick("right")
-					robotgo.MouseClick("f1")
-					robotgo.Move(0, 0)
-					return true
-				} else {
-					okTimes--
-					if okTimes < 0 {
-						okTimes = 0
-					}
+			} else {
+				okTimes--
+				if okTimes < 0 {
+					okTimes = 0
 				}
+			}
+			if okTimes > 2 {
+				robotgo.Move(f.activeX, f.activeY)
+				robotgo.MouseClick("right")
+				robotgo.MouseClick("f1")
+				robotgo.Move(0, 0)
+				return true
 			}
 			time.Sleep(200 * time.Millisecond)
 		}
