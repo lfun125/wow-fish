@@ -162,7 +162,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
 			distance := utils.ComparedLuminance(oldImg, newImg)
-			f.Info(fmt.Sprintf("Compared luminance:%0.4f", distance))
+			f.Info(fmt.Sprintf("Compared luminance: %0.4f", distance))
 			if distance >= f.Config.Luminance {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
