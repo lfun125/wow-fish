@@ -20,8 +20,8 @@ type Config struct {
 	ThrowButton string
 	// 鱼漂颜色
 	FloatColor color.RGBA
-	// 差异度大于就收杆
-	Distance float64
+	// 明亮度大于等于这个值就收杆
+	Luminance float64
 }
 
 func NewDefaultConfig() *Config {
@@ -32,7 +32,7 @@ func NewDefaultConfig() *Config {
 		FindThreshold:     20,
 		InitialRadius:     40,
 		ThrowButton:       "1",
-		Distance:          0.1,
+		Luminance:         5,
 		FloatColor: color.RGBA{
 			R: 255,
 			G: 243,
@@ -42,6 +42,6 @@ func NewDefaultConfig() *Config {
 }
 
 func (c *Config) ParseParams() {
-	flag.Float64Var(&c.Distance, "dis", c.Distance, "差异度大于此值就收杆")
+	flag.Float64Var(&c.Luminance, "l", c.Luminance, "明亮度大于等于这个值就收杆")
 	flag.Parse()
 }

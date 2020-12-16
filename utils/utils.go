@@ -51,7 +51,6 @@ func Round(val float64, places int) float64 {
 func ComparedLuminance(before, after image.Image) float64 {
 	y1 := averageLuminance(before)
 	y2 := averageLuminance(after)
-	//return math.Abs(float64(rgb1.R)-float64(rgb2.R)) + math.Abs(float64(rgb1.G)-float64(rgb2.G)) + math.Abs(float64(rgb1.B)-float64(rgb2.B))
 	return y2 - y1
 }
 
