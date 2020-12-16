@@ -214,7 +214,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 				B: uint8(b >> 8),
 				A: uint8(a >> 8),
 			}
-			data.Diff = utils.RGBDifference(f.Config.FloatColor, rgba)
+			data.Diff = utils.RGBDistance(f.Config.FloatColor, rgba)
 			if len(store[data.Diff]) == 0 {
 				diffKeys = append(diffKeys, data.Diff)
 			}
