@@ -12,10 +12,6 @@ type Config struct {
 	ColorPickerButton string
 	// 对比区域坐标
 	CompareCoordinate int
-	// 寻找鱼标阀值
-	FindThreshold int
-	// 半径
-	InitialRadius int
 	// 抛竿按键
 	ThrowButton string
 	// 鱼漂颜色
@@ -29,8 +25,6 @@ func NewDefaultConfig() *Config {
 		SwitchButton:      "f3",
 		ColorPickerButton: "f4",
 		CompareCoordinate: 100,
-		FindThreshold:     20,
-		InitialRadius:     40,
 		ThrowButton:       "1",
 		Luminance:         4,
 		FloatColor: color.RGBA{
