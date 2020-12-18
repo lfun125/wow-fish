@@ -72,7 +72,7 @@ func (f *Fishing) watchTask() {
 							ctx := context.WithValue(context.Background(), "KeyCycle", v)
 							ctx = context.WithValue(ctx, "Type", typ)
 							keyTask.Context, f.cancelFunc = context.WithCancel(ctx)
-							f.task <- task
+							f.task <- keyTask
 						}(v)
 						return
 					}
