@@ -62,18 +62,20 @@ func (f *Fishing) watchTask() {
 			f.Info("User manual pause")
 		default:
 			// 添加按键任务
-			for _, v := range f.Config.ListKeyCycle {
-				if time.Since(v.ExecTime) > v.WaitTime {
-					go func(v *KeyCycle) {
-						keyTask := new(Task)
-						keyTask.Timeout = time.After(30 * time.Second)
-						keyTask.Type = TaskKeyboard
-						ctx := context.WithValue(context.Background(), "KeyCycle", v)
-						ctx = context.WithValue(ctx, "Type", typ)
-						keyTask.Context, f.cancelFunc = context.WithCancel(ctx)
-						f.task <- task
-					}(v)
-					return
+			if typ == TaskTypeThrowFishingRod {
+				for _, v := range f.Config.ListKeyCycle {
+					if time.Since(v.ExecTime) > v.WaitTime {
+						go func(v *KeyCycle) {
+							keyTask := new(Task)
+							keyTask.Timeout = time.After(30 * time.Second)
+							keyTask.Type = TaskKeyboard
+							ctx := context.WithValue(context.Background(), "KeyCycle", v)
+							ctx = context.WithValue(ctx, "Type", typ)
+							keyTask.Context, f.cancelFunc = context.WithCancel(ctx)
+							f.task <- task
+						}(v)
+						return
+					}
 				}
 			}
 			go func(task *Task) {
