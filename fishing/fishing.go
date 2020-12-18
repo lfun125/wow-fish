@@ -143,6 +143,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 	case TaskKeyboard:
 		kc := t.Context.Value("KeyCycle").(*KeyCycle)
 		robotgo.KeyTap(kc.Key)
+		time.Sleep(kc.WaitTime)
 		kc.ExecTime = time.Now()
 		return TaskTypeThrowFishingRod
 	case TaskTypeThrowFishingRod:
