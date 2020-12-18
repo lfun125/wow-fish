@@ -42,13 +42,33 @@ func NewFishing(c *Config) *Fishing {
 	f.screenInfo.DisplayZoom = float64(10) / float64(displayWidth)
 	f.Info("Screen info", "width", f.screenInfo.ScreenWidth, "height", f.screenInfo.ScreenHeight, "zoom", f.screenInfo.DisplayZoom)
 	f.Info("Config info", fmt.Sprintf("%+v", f.Config))
+	for _, v := range f.Config.ListKeyCycle {
+		f.Info("Key cycle", fmt.Sprintf("%+v", v))
+	}
 	return f
 }
 
 func (f *Fishing) Run() error {
 	go f.watchKeyboard()
+	go f.addKeyboardTask()
 	go f.watchTask()
 	select {}
+}
+
+func (f *Fishing) addKeyboardTask() {
+	for _, v := range f.Config.ListKeyCycle {
+		go func(v *KeyCycle) {
+			for {
+				time.Sleep(v.CycleDuration)
+				task := new(Task)
+				task.Timeout = time.After(30 * time.Second)
+				task.Type = TaskKeyboard
+				ctx := context.WithValue(context.Background(), "KeyCycle", v)
+				task.Context, f.cancelFunc = context.WithCancel(ctx)
+				f.task <- task
+			}
+		}(v)
+	}
 }
 
 func (f *Fishing) watchTask() {
@@ -124,6 +144,10 @@ func (f *Fishing) stop() {
 
 func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
+	case TaskKeyboard:
+		kc := t.Context.Value("KeyCycle").(*KeyCycle)
+		robotgo.KeyTap(kc.Key)
+		time.Sleep(kc.WaitTime)
 	case TaskTypeThrowFishingRod:
 		f.Info("Start looking for fish floats")
 		//if isFind := f.stepThrowFishingRod(t); isFind {

@@ -13,6 +13,8 @@ const (
 	TaskTypeThrowFishingRod
 	// 等鱼上钩
 	TaskTypeWait
+	// 按键
+	TaskKeyboard
 )
 
 type Task struct {
