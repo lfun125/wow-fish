@@ -61,23 +61,6 @@ func (f *Fishing) watchTask() {
 		case <-task.Context.Done():
 			f.Info("User manual pause")
 		default:
-			// 添加按键任务
-			//if typ == TaskTypeThrowFishingRod {
-			//	for _, v := range f.Config.ListKeyCycle {
-			//		if time.Since(v.ExecTime) > v.WaitTime {
-			//			go func(v *KeyCycle) {
-			//				keyTask := new(Task)
-			//				keyTask.Timeout = time.After(30 * time.Second)
-			//				keyTask.Type = TaskKeyboard
-			//				ctx := context.WithValue(context.Background(), "KeyCycle", v)
-			//				ctx = context.WithValue(ctx, "Type", typ)
-			//				keyTask.Context, f.cancelFunc = context.WithCancel(ctx)
-			//				f.task <- keyTask
-			//			}(v)
-			//			return
-			//		}
-			//	}
-			//}
 			go func(task *Task) {
 				switch typ {
 				case TaskTypeThrowFishingRod:
@@ -118,11 +101,24 @@ func (f *Fishing) watchKeyboard() {
 }
 
 func (f *Fishing) start() {
-	f.times++
+	var kc *KeyCycle
 	task := new(Task)
+	for _, v := range f.Config.ListKeyCycle {
+		if time.Since(v.ExecTime) > v.CycleDuration {
+			kc = v
+			break
+		}
+	}
 	task.Timeout = time.After(30 * time.Second)
-	task.Type = TaskTypeThrowFishingRod
-	task.Context, f.cancelFunc = context.WithCancel(context.Background())
+	if kc != nil {
+		task.Type = TaskKeyboard
+		ctx := context.WithValue(context.Background(), "KeyCycle", kc)
+		task.Context, f.cancelFunc = context.WithCancel(ctx)
+	} else {
+		f.times++
+		task.Type = TaskTypeThrowFishingRod
+		task.Context, f.cancelFunc = context.WithCancel(context.Background())
+	}
 	f.task <- task
 }
 
@@ -148,7 +144,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 		kc := t.Context.Value("KeyCycle").(*KeyCycle)
 		robotgo.KeyTap(kc.Key)
 		kc.ExecTime = time.Now()
-		return t.Context.Value("Type").(TaskType)
+		return TaskTypeThrowFishingRod
 	case TaskTypeThrowFishingRod:
 		f.Info("Start looking for fish floats")
 		//if isFind := f.stepThrowFishingRod(t); isFind {
