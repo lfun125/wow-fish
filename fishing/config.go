@@ -27,6 +27,7 @@ type Config struct {
 
 type KeyCycle struct {
 	Key           string
+	ExecTime      time.Time
 	WaitTime      time.Duration
 	CycleDuration time.Duration
 }
@@ -54,6 +55,7 @@ func (list *ListKeyCycle) Set(s string) error {
 	data.Key = strings.ToLower(strings.TrimSpace(ary[0]))
 	data.WaitTime = timeDuration
 	data.CycleDuration = cycleDuration
+	data.ExecTime = time.Now()
 	*list = append(*list, data)
 	return nil
 }
