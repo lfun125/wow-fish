@@ -10,9 +10,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/nfnt/resize"
+	hook "github.com/robotn/gohook"
 
 	"github.com/go-vgo/robotgo"
+	"github.com/nfnt/resize"
 )
 
 var (
@@ -33,28 +34,21 @@ func NewFishing(c *Config) *Fishing {
 	f := new(Fishing)
 	f.Config = c
 	f.task = make(chan *Task)
-	//f.context, f.cancelFunc = context.WithCancel(context.Background())
 	f.screenInfo = new(ScreenInfo)
 	f.screenInfo.ScreenWidth, f.screenInfo.ScreenHeight = robotgo.GetScreenSize()
 	bitmapRef := robotgo.CaptureScreen(0, 0, 10, 10)
 	img := robotgo.ToImage(bitmapRef)
 	displayWidth := img.Bounds().Size().X
 	f.screenInfo.DisplayZoom = float64(10) / float64(displayWidth)
-	fmt.Println(f.screenInfo)
+	f.Info("Screen info", "width", f.screenInfo.ScreenWidth, "height", f.screenInfo.ScreenHeight, "zoom", f.screenInfo.DisplayZoom)
+	f.Info("Config info", fmt.Sprintf("%+v", f.Config))
 	return f
 }
 
 func (f *Fishing) Run() error {
-	go f.watchSwitch()
+	go f.watchKeyboard()
 	go f.watchTask()
 	select {}
-}
-
-func (f *Fishing) ColorPicker() {
-	if ok := robotgo.AddEvent(f.Config.ColorPickerButton); ok {
-		x, y := robotgo.GetMousePos()
-		f.Config.FloatColor = utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-	}
 }
 
 func (f *Fishing) watchTask() {
@@ -77,18 +71,30 @@ func (f *Fishing) watchTask() {
 	}
 }
 
-func (f *Fishing) watchSwitch() {
-	for {
-		ok := robotgo.AddEvent(f.Config.SwitchButton)
-		if ok {
-			if f.cancelFunc != nil {
-				f.stop()
-			} else {
-				f.start()
-			}
+func (f *Fishing) watchKeyboard() {
+	var keyTime time.Time
+	robotgo.EventHook(hook.KeyHold, []string{f.Config.SwitchButton}, func(e hook.Event) {
+		if e.When.Sub(keyTime) < 300*time.Millisecond {
+			return
 		}
-		time.Sleep(time.Second)
-	}
+		keyTime = e.When
+		if f.cancelFunc != nil {
+			f.stop()
+		} else {
+			f.start()
+		}
+	})
+	robotgo.EventHook(hook.KeyHold, []string{f.Config.ColorPickerButton}, func(e hook.Event) {
+		if e.When.Sub(keyTime) < 300*time.Millisecond {
+			return
+		}
+		keyTime = e.When
+		x, y := robotgo.GetMousePos()
+		f.Config.FloatColor = utils.StrToRGBA(robotgo.GetPixelColor(x, y))
+		f.Info(fmt.Sprintf("Set fish float color: %v", f.Config.FloatColor))
+	})
+	s := robotgo.EventStart()
+	<-robotgo.EventProcess(s)
 }
 
 func (f *Fishing) start() {
