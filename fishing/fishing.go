@@ -172,7 +172,9 @@ func (f *Fishing) runTask(t *Task) TaskType {
 // 等待鱼上钩
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	// 按以下清楚垃圾开河蚌的宏
-	robotgo.KeyTap("2")
+	if f.Config.OpenMacro != "" {
+		robotgo.KeyTap(f.Config.OpenMacro)
+	}
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	width := f.Config.CompareCoordinate
@@ -219,8 +221,12 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeY = 0
 	robotgo.Move(0, 0)
 	// 按下下竿按键
-	robotgo.KeyTap("1")
+	robotgo.KeyTap(f.Config.FishingButton)
 	time.Sleep(3 * time.Second)
+	// 清楚垃圾
+	if f.Config.ClearMacro != "" {
+		robotgo.KeyTap(f.Config.ClearMacro)
+	}
 	// 截屏
 	screen := robotgo.ToImage(robotgo.CaptureScreen())
 	// 缩放

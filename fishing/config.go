@@ -13,6 +13,12 @@ type Config struct {
 	SwitchButton string
 	// 取色器按钮
 	ColorPickerButton string
+	// 删除垃圾宏
+	ClearMacro string
+	// 开河蚌宏
+	OpenMacro string
+	// 钓鱼按键
+	FishingButton string
 	// 对比区域坐标
 	CompareCoordinate int
 	// 抛竿按键
@@ -62,6 +68,9 @@ func (list *ListKeyCycle) Set(s string) error {
 
 func NewDefaultConfig() *Config {
 	return &Config{
+		FishingButton:     "1",
+		OpenMacro:         "2",
+		ClearMacro:        "",
 		SwitchButton:      "f3",
 		ColorPickerButton: "f4",
 		CompareCoordinate: 100,
@@ -75,8 +84,10 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-func (c *Config) ParseParams() {
+func (c *Config) ParseParams() (importCfg bool) {
 	flag.Float64Var(&c.Luminance, "l", c.Luminance, "明亮度大于等于这个值就收杆")
 	flag.Var(&c.ListKeyCycle, "cycle", "key,time,cycle")
+	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.Parse()
+	return
 }
