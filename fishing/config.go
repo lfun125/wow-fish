@@ -70,7 +70,7 @@ func NewDefaultConfig() *Config {
 	return &Config{
 		FishingButton:     "1",
 		OpenMacro:         "2",
-		ClearMacro:        "",
+		ClearMacro:        "6",
 		SwitchButton:      "f3",
 		ColorPickerButton: "f4",
 		CompareCoordinate: 100,
