@@ -104,6 +104,7 @@ func (f *Fishing) start() {
 	var kc *KeyCycle
 	task := new(Task)
 	for _, v := range f.Config.ListKeyCycle {
+		fmt.Println("kc", v)
 		if time.Since(v.ExecTime) > v.CycleDuration {
 			kc = v
 			break
@@ -142,12 +143,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskKeyboard:
 		kc := t.Context.Value("KeyCycle").(*KeyCycle)
-		if kc.Key.IsXY() {
-			robotgo.Move(kc.Key.Pos.X, kc.Key.Pos.Y)
-			robotgo.MouseClick("right")
-		} else {
-			robotgo.KeyTap(f.Config.FishingButton.Key)
-		}
+		kc.Key.Tap()
 		time.Sleep(kc.WaitTime)
 		kc.ExecTime = time.Now()
 		return TaskTypeThrowFishingRod
@@ -177,9 +173,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 // 等待鱼上钩
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	// 按以下清楚垃圾开河蚌的宏
-	if f.Config.OpenMacro != "" {
-		robotgo.KeyTap(f.Config.OpenMacro)
-	}
+	f.Config.OpenMacro.Tap()
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	width := f.Config.CompareCoordinate
@@ -226,17 +220,10 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeY = 0
 	robotgo.Move(0, 0)
 	// 按下下竿按键
-	if f.Config.FishingButton.IsXY() {
-		robotgo.Move(f.Config.FishingButton.Pos.X, f.Config.FishingButton.Pos.Y)
-		robotgo.MouseClick("right")
-	} else {
-		robotgo.KeyTap(f.Config.FishingButton.Key)
-	}
+	f.Config.FishingButton.Tap()
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
-	if f.Config.ClearMacro != "" {
-		robotgo.KeyTap(f.Config.ClearMacro)
-	}
+	f.Config.ClearMacro.Tap()
 	// 截屏
 	screen := robotgo.ToImage(robotgo.CaptureScreen())
 	// 缩放
