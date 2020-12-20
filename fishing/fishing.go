@@ -198,7 +198,6 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			if diff >= f.Config.Luminance {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
-				//robotgo.KeyTap("f1")
 				robotgo.Move(0, 0)
 				return true
 			} else if diff < f.Config.Luminance/4 {
