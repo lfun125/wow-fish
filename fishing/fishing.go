@@ -142,7 +142,12 @@ func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskKeyboard:
 		kc := t.Context.Value("KeyCycle").(*KeyCycle)
-		robotgo.KeyTap(kc.Key)
+		if kc.Key.IsXY() {
+			robotgo.Move(kc.Key.Pos.X, kc.Key.Pos.Y)
+			robotgo.MouseClick("right")
+		} else {
+			robotgo.KeyTap(f.Config.FishingButton.Key)
+		}
 		time.Sleep(kc.WaitTime)
 		kc.ExecTime = time.Now()
 		return TaskTypeThrowFishingRod
@@ -199,7 +204,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			if diff >= f.Config.Luminance {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
-				robotgo.MouseClick("f1")
+				//robotgo.KeyTap("f1")
 				robotgo.Move(0, 0)
 				return true
 			} else if diff < f.Config.Luminance/4 {
@@ -221,7 +226,12 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeY = 0
 	robotgo.Move(0, 0)
 	// 按下下竿按键
-	robotgo.KeyTap(f.Config.FishingButton)
+	if f.Config.FishingButton.IsXY() {
+		robotgo.Move(f.Config.FishingButton.Pos.X, f.Config.FishingButton.Pos.Y)
+		robotgo.MouseClick("right")
+	} else {
+		robotgo.KeyTap(f.Config.FishingButton.Key)
+	}
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
 	if f.Config.ClearMacro != "" {

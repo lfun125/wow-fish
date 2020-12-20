@@ -4,9 +4,20 @@ import (
 	"errors"
 	"flag"
 	"image/color"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
+
+type Button struct {
+	Key string
+	Pos struct{ X, Y int }
+}
+
+func (b Button) IsXY() bool {
+	return b.Pos.X > 0 && b.Pos.Y > 0
+}
 
 type Config struct {
 	// 开关按键
@@ -18,7 +29,7 @@ type Config struct {
 	// 开河蚌宏
 	OpenMacro string
 	// 钓鱼按键
-	FishingButton string
+	FishingButton Button
 	// 对比区域坐标
 	CompareCoordinate int
 	// 抛竿按键
@@ -32,7 +43,7 @@ type Config struct {
 }
 
 type KeyCycle struct {
-	Key           string
+	Key           Button
 	ExecTime      time.Time
 	WaitTime      time.Duration
 	CycleDuration time.Duration
@@ -58,7 +69,7 @@ func (list *ListKeyCycle) Set(s string) error {
 		return err
 	}
 	data := new(KeyCycle)
-	data.Key = strings.ToLower(strings.TrimSpace(ary[0]))
+	data.Key.Key = strings.ToLower(strings.TrimSpace(ary[0]))
 	data.WaitTime = timeDuration
 	data.CycleDuration = cycleDuration
 	data.ExecTime = time.Now()
@@ -68,7 +79,7 @@ func (list *ListKeyCycle) Set(s string) error {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		FishingButton:     "1",
+		FishingButton:     Button{Key: "1"},
 		OpenMacro:         "2",
 		ClearMacro:        "6",
 		SwitchButton:      "f3",
@@ -85,9 +96,24 @@ func NewDefaultConfig() *Config {
 }
 
 func (c *Config) ParseParams() (importCfg bool) {
+	var fb string
+	flag.StringVar(&fb, "fb", c.FishingButton.Key, "钓鱼按键，如果是坐标用逗号隔开")
 	flag.Float64Var(&c.Luminance, "l", c.Luminance, "明亮度大于等于这个值就收杆")
 	flag.Var(&c.ListKeyCycle, "cycle", "key,time,cycle")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.Parse()
+	if ary := strings.Split(fb, ","); len(ary) == 1 {
+		c.FishingButton.Key = fb
+	} else if len(ary) == 2 {
+		var err error
+		if c.FishingButton.Pos.X, err = strconv.Atoi(ary[0]); err != nil {
+			flag.Usage()
+			os.Exit(1)
+		}
+		if c.FishingButton.Pos.Y, err = strconv.Atoi(ary[1]); err != nil {
+			flag.Usage()
+			os.Exit(1)
+		}
+	}
 	return
 }
