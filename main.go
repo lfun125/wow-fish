@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	checkMac("00-FF-BD-F6-93-F1")
+	//checkMac("00-FF-BD-F6-93-F1")
 	c := fishing.NewDefaultConfig()
 	if importCfg := c.ParseParams(); importCfg {
 		bts, _ := json.MarshalIndent(c, "", "    ")
