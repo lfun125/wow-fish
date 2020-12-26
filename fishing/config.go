@@ -3,9 +3,13 @@ package fishing
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"image/color"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/klauspost/cpuid"
 )
 
 type Config struct {
@@ -88,6 +92,12 @@ func (c *Config) ParseParams() (importCfg bool) {
 	flag.Float64Var(&c.Luminance, "l", c.Luminance, "明亮度大于等于这个值就收杆")
 	flag.Var(&c.ListKeyCycle, "cycle", "key,time,cycle")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
+	var cpu bool
+	flag.BoolVar(&cpu, "cpu", false, "")
 	flag.Parse()
+	if cpu {
+		fmt.Println(cpuid.CPU.VendorString)
+		os.Exit(0)
+	}
 	return
 }
