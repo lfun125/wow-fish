@@ -155,7 +155,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 			f.Info("Found a fishing float")
 			return TaskTypeWait
 		}
-		f.Info("No fishing float found")
+		f.Info("Not found fishing float")
 		return TaskTypeThrowFishingRod
 	case TaskTypeWait:
 		f.Info("Start waiting for the hook")
