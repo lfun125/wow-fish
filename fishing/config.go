@@ -3,9 +3,7 @@ package fishing
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"image/color"
-	"net"
 	"strings"
 	"time"
 )
@@ -90,18 +88,6 @@ func (c *Config) ParseParams() (importCfg bool) {
 	flag.Float64Var(&c.Luminance, "l", c.Luminance, "明亮度大于等于这个值就收杆")
 	flag.Var(&c.ListKeyCycle, "cycle", "key,time,cycle")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
-	var cpu bool
-	flag.BoolVar(&cpu, "cpu", false, "")
 	flag.Parse()
-	if cpu {
-		interfaces, err := net.Interfaces()
-		if err != nil {
-			panic("Poor soul, here is what you got: " + err.Error())
-		}
-
-		for _, inter := range interfaces {
-			fmt.Println(inter.Name, inter.HardwareAddr)
-		}
-	}
 	return
 }
