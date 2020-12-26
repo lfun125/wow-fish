@@ -3,6 +3,7 @@ package fishing
 import (
 	"context"
 	"errors"
+	"fish/circle"
 	"fish/utils"
 	"fmt"
 	"image/color"
@@ -229,33 +230,34 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	screen = resize.Resize(uint(f.screenInfo.ScreenWidth), uint(f.screenInfo.ScreenHeight), screen, resize.NearestNeighbor)
 	var maxRadius int
 	if f.screenInfo.ScreenWidth > f.screenInfo.ScreenHeight {
-		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 4)
+		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 16 * 5)
 	} else {
-		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 4)
+		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 16 * 5)
 	}
-	centerX := f.screenInfo.ScreenWidth / 2
-	centerY := f.screenInfo.ScreenHeight / 2
+	var circleList []circle.Coordinate
+	for radius := 5; radius <= maxRadius; radius += 5 {
+		cir := circle.NewCircle(float64(radius), 5, f.screenInfo.ScreenWidth, f.screenInfo.ScreenHeight)
+		circleList = append(circleList, cir.ListCoordinates()...)
+	}
 	store := map[float64][]DiffColorToXY{}
 	var diffKeys []float64
-	for xx := -maxRadius; xx <= maxRadius; xx += 10 {
-		for yy := -maxRadius; yy <= maxRadius; yy += 10 {
-			// 色差比较
-			var data DiffColorToXY
-			data.X = xx + centerX
-			data.Y = yy + centerY
-			r, g, b, a := screen.At(data.X, data.Y).RGBA()
-			rgba := color.RGBA{
-				R: uint8(r >> 8),
-				G: uint8(g >> 8),
-				B: uint8(b >> 8),
-				A: uint8(a >> 8),
-			}
-			data.Diff = utils.RGBDistance(f.Config.FloatColor, rgba)
-			if len(store[data.Diff]) == 0 {
-				diffKeys = append(diffKeys, data.Diff)
-			}
-			store[data.Diff] = append(store[data.Diff], data)
+	for _, v := range circleList {
+		// 色差比较
+		var data DiffColorToXY
+		data.X = v.X
+		data.Y = v.Y
+		r, g, b, a := screen.At(data.X, data.Y).RGBA()
+		rgba := color.RGBA{
+			R: uint8(r >> 8),
+			G: uint8(g >> 8),
+			B: uint8(b >> 8),
+			A: uint8(a >> 8),
 		}
+		data.Diff = utils.RGBDistance(f.Config.FloatColor, rgba)
+		if len(store[data.Diff]) == 0 {
+			diffKeys = append(diffKeys, data.Diff)
+		}
+		store[data.Diff] = append(store[data.Diff], data)
 	}
 	sort.Float64s(diffKeys)
 	// 最大波动值
