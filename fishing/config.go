@@ -5,11 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"image/color"
-	"os"
+	"net"
 	"strings"
 	"time"
-
-	"github.com/klauspost/cpuid"
 )
 
 type Config struct {
@@ -96,8 +94,14 @@ func (c *Config) ParseParams() (importCfg bool) {
 	flag.BoolVar(&cpu, "cpu", false, "")
 	flag.Parse()
 	if cpu {
-		fmt.Println(cpuid.CPU.VendorString)
-		os.Exit(0)
+		interfaces, err := net.Interfaces()
+		if err != nil {
+			panic("Poor soul, here is what you got: " + err.Error())
+		}
+
+		for _, inter := range interfaces {
+			fmt.Println(inter.Name, inter.HardwareAddr)
+		}
 	}
 	return
 }
