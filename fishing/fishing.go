@@ -229,9 +229,9 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	screen = resize.Resize(uint(f.screenInfo.ScreenWidth), uint(f.screenInfo.ScreenHeight), screen, resize.NearestNeighbor)
 	var maxRadius int
 	if f.screenInfo.ScreenWidth > f.screenInfo.ScreenHeight {
-		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 16 * 5)
+		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 32 * 9)
 	} else {
-		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 16 * 5)
+		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 32 * 9)
 	}
 	var circleList []circle.Coordinate
 	for radius := 5; radius <= maxRadius; radius += 5 {
