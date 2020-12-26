@@ -105,7 +105,6 @@ func (f *Fishing) start() {
 	var kc *KeyCycle
 	task := new(Task)
 	for _, v := range f.Config.ListKeyCycle {
-		fmt.Println("kc", v)
 		if time.Since(v.ExecTime) > v.CycleDuration {
 			kc = v
 			break
