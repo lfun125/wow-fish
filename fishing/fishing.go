@@ -282,7 +282,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			default:
 				distance, err := f.getRGBDistance(xy.X, xy.Y)
 				if err == ErrOutOfBounds {
-					f.Info("Out bounds", err)
+					f.Info("Out bounds", xy.X, xy.Y, err)
 					return false
 				} else if err != nil {
 					f.Info(err)
