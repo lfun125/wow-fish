@@ -278,6 +278,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 				f.Info("Time out")
 				return false
 			case <-t.Context.Done():
+				f.Info("done")
 				return false
 			default:
 				distance, err := f.getRGBDistance(xy.X, xy.Y)
