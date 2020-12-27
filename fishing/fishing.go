@@ -260,7 +260,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	}
 	sort.Float64s(diffKeys)
 	// 最大波动值
-	var maxOscillation float64
+	var maxOscillation float64 = -1
 	var number int
 	if number = len(diffKeys); number > 3 {
 		number = 3
@@ -275,15 +275,12 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			}
 			select {
 			case <-t.Timeout:
-				f.Info("Time out")
 				return false
 			case <-t.Context.Done():
-				f.Info("done")
 				return false
 			default:
 				distance, err := f.getRGBDistance(xy.X, xy.Y)
 				if err == ErrOutOfBounds {
-					f.Info("Out bounds", xy.X, xy.Y, err)
 					return false
 				} else if err != nil {
 					f.Info(err)
