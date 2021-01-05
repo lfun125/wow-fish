@@ -235,7 +235,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	}
 	var circleList []circle.Coordinate
 	for radius := 5; radius <= maxRadius; radius += 5 {
-		cir := circle.NewCircle(float64(radius), 5, f.screenInfo.ScreenWidth, f.screenInfo.ScreenHeight)
+		cir := circle.NewCircle(float64(radius), 5, f.screenInfo.ScreenWidth/2, f.screenInfo.ScreenHeight*3/8)
 		circleList = append(circleList, cir.ListCoordinates()...)
 	}
 	store := map[float64][]DiffColorToXY{}

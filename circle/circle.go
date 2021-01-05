@@ -27,14 +27,14 @@ type Circle struct {
 // NewCircle
 // radius 周长
 // arc 每次移动弧度
-// width 屏幕宽度
-// height 屏幕高度
-func NewCircle(radius, arc float64, width, height int) *Circle {
+// x 中心点坐标
+// y 中心点坐标
+func NewCircle(radius, arc float64, x, y int) *Circle {
 	c := &Circle{
 		Radius: radius,
 	}
-	c.Center[0] = width / 2
-	c.Center[1] = height / 2
+	c.Center[0] = x
+	c.Center[1] = y
 	c.ArcLen = arc
 	return c
 }
