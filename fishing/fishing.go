@@ -211,7 +211,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	compareCoordinate := C.CompareCoordinate
 	if f.SplitArea > 0 {
-		compareCoordinate /= 4
+		compareCoordinate /= 2
 	}
 	width := compareCoordinate
 	x := f.activeX - width/2
@@ -375,7 +375,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 	compareCoordinate := C.CompareCoordinate
 	if f.SplitArea > 0 {
-		compareCoordinate /= 4
+		compareCoordinate /= 2
 	}
 	cutX := x - compareCoordinate/2
 	cutY := y - compareCoordinate/2
