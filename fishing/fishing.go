@@ -209,7 +209,11 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	C.OpenMacro.Tap()
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
-	width := C.CompareCoordinate
+	compareCoordinate := C.CompareCoordinate
+	if f.SplitArea > 0 {
+		compareCoordinate /= 4
+	}
+	width := compareCoordinate
 	x := f.activeX - width/2
 	y := f.activeY - width/2
 	oldImg := robotgo.ToImage(robotgo.CaptureScreen(x, y, width, width))
@@ -369,14 +373,18 @@ func (f *Fishing) stepThrow(t *Task) bool {
 }
 
 func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
-	cutX := x - C.CompareCoordinate/2
-	cutY := y - C.CompareCoordinate/2
-	bitmapRef := robotgo.CaptureScreen(cutX, cutY, C.CompareCoordinate, C.CompareCoordinate)
+	compareCoordinate := C.CompareCoordinate
+	if f.SplitArea > 0 {
+		compareCoordinate /= 4
+	}
+	cutX := x - compareCoordinate/2
+	cutY := y - compareCoordinate/2
+	bitmapRef := robotgo.CaptureScreen(cutX, cutY, compareCoordinate, compareCoordinate)
 	oldImg := robotgo.ToImage(bitmapRef)
 	robotgo.Move(x, y)
 	time.Sleep(20 * time.Millisecond)
 	// 移动后对比图片
-	bitmapRef = robotgo.CaptureScreen(cutX, cutY, C.CompareCoordinate, C.CompareCoordinate)
+	bitmapRef = robotgo.CaptureScreen(cutX, cutY, compareCoordinate, compareCoordinate)
 	if bitmapRef == nil {
 		return 0, ErrOutOfBounds
 	}
