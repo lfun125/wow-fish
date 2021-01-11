@@ -9,13 +9,11 @@ import (
 	"image/color"
 	"log"
 	"sort"
-	"sync"
 	"time"
-
-	hook "github.com/robotn/gohook"
 
 	"github.com/go-vgo/robotgo"
 	"github.com/nfnt/resize"
+	hook "github.com/robotn/gohook"
 )
 
 var (
@@ -23,8 +21,7 @@ var (
 )
 
 var (
-	screenInfo        *ScreenInfo
-	setScreenInfoOnce sync.Once
+	screenInfo *ScreenInfo
 )
 
 type Fishing struct {
@@ -85,52 +82,6 @@ func (f *Fishing) watchTask() {
 			}(task)
 		}
 	}
-}
-
-func WatchKeyboard(list ...*Fishing) {
-	var keyTime time.Time
-	robotgo.EventHook(hook.KeyHold, []string{C.SwitchButton}, func(e hook.Event) {
-		if e.When.Sub(keyTime) < 300*time.Millisecond {
-			return
-		}
-		keyTime = e.When
-		for _, f := range list {
-			if f.cancelFunc != nil {
-				f.stop()
-			} else {
-				f.start()
-			}
-		}
-	})
-	robotgo.EventHook(hook.KeyHold, []string{C.ColorPickerButton}, func(e hook.Event) {
-		if e.When.Sub(keyTime) < 300*time.Millisecond {
-			return
-		}
-		keyTime = e.When
-		x, y := robotgo.GetMousePos()
-		var area int
-		if x < screenInfo.ScreenWidth/2 {
-			if y < screenInfo.ScreenHeight/2 {
-				area = 1
-			} else {
-				area = 3
-			}
-		} else {
-			if y < screenInfo.ScreenHeight/2 {
-				area = 2
-			} else {
-				area = 4
-			}
-		}
-		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-		for _, f := range list {
-			if f.SplitArea == 0 || f.SplitArea == area {
-				f.FloatColor = floatColor
-			}
-		}
-	})
-	s := robotgo.EventStart()
-	<-robotgo.EventProcess(s)
 }
 
 func (f *Fishing) start() {
@@ -261,25 +212,14 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	// 清楚垃圾
 	C.ClearMacro.Tap()
 	// 截屏
-	var x, y, w, h int
+	var w, h int
 	w, h = screenInfo.ScreenWidth, screenInfo.ScreenHeight
-	switch f.SplitArea {
-	case 1:
+	if f.SplitArea > 0 {
 		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
-	case 2:
-		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
-		x = w
-	case 3:
-		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
-		y = h
-	case 4:
-		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
-		x = w
-		y = h
 	}
-	screen := robotgo.ToImage(robotgo.CaptureScreen(x, y, w, h))
+	screen := robotgo.ToImage(robotgo.CaptureScreen())
 	// 缩放
-	screen = resize.Resize(uint(w), uint(h), screen, resize.NearestNeighbor)
+	screen = resize.Resize(uint(screenInfo.ScreenWidth), uint(screenInfo.ScreenHeight), screen, resize.NearestNeighbor)
 	var maxRadius int
 	if w > h {
 		maxRadius = int(float64(h) / 32 * 8)
@@ -398,4 +338,51 @@ func (f Fishing) Info(args ...interface{}) {
 	data = append(data, fmt.Sprintf("Try: [%d]", f.times))
 	data = append(data, args...)
 	log.Println(data)
+}
+
+func WatchKeyboard(list ...*Fishing) {
+	var keyTime time.Time
+	robotgo.EventHook(hook.KeyHold, []string{C.SwitchButton}, func(e hook.Event) {
+		if e.When.Sub(keyTime) < 300*time.Millisecond {
+			return
+		}
+		keyTime = e.When
+		for _, f := range list {
+			if f.cancelFunc != nil {
+				f.stop()
+			} else {
+				f.start()
+			}
+		}
+	})
+	robotgo.EventHook(hook.KeyHold, []string{C.ColorPickerButton}, func(e hook.Event) {
+		if e.When.Sub(keyTime) < 300*time.Millisecond {
+			return
+		}
+		keyTime = e.When
+		x, y := robotgo.GetMousePos()
+		var area int
+		if x < screenInfo.ScreenWidth/2 {
+			if y < screenInfo.ScreenHeight/2 {
+				area = 1
+			} else {
+				area = 3
+			}
+		} else {
+			if y < screenInfo.ScreenHeight/2 {
+				area = 2
+			} else {
+				area = 4
+			}
+		}
+		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
+		for _, f := range list {
+			if f.SplitArea == 0 || f.SplitArea == area {
+				f.FloatColor = floatColor
+				fmt.Println(floatColor)
+			}
+		}
+	})
+	s := robotgo.EventStart()
+	<-robotgo.EventProcess(s)
 }

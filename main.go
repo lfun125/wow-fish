@@ -16,7 +16,7 @@ func main() {
 		fmt.Println(string(bts))
 		return
 	}
-	f := fishing.NewFishing(1)
+	f := fishing.NewFishing(3)
 	go fishing.WatchKeyboard(f)
 	log.Fatalln(f.Run())
 }
