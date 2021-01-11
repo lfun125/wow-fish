@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"log"
 	"sort"
+	"sync"
 	"time"
 
 	hook "github.com/robotn/gohook"
@@ -21,9 +22,16 @@ var (
 	ErrOutOfBounds = errors.New("Out of bounds ")
 )
 
+var (
+	screenInfo        *ScreenInfo
+	setScreenInfoOnce sync.Once
+)
+
 type Fishing struct {
-	Config     *Config
-	screenInfo *ScreenInfo
+	// 分屏所在分配区域 1-4; 0不分屏
+	SplitArea int
+	// 鱼漂颜色
+	FloatColor color.RGBA
 	activeX    int
 	activeY    int
 	task       chan *Task
@@ -31,37 +39,41 @@ type Fishing struct {
 	times      int
 }
 
-func NewFishing(c *Config) *Fishing {
+func init() {
+	screenInfo = new(ScreenInfo)
+	screenInfo.ScreenWidth, screenInfo.ScreenHeight = robotgo.GetScreenSize()
+}
+
+func NewFishing(splitArea int) *Fishing {
 	f := new(Fishing)
-	f.Config = c
+	f.FloatColor = C.FloatColor
+	f.SplitArea = splitArea
 	f.task = make(chan *Task)
-	f.screenInfo = new(ScreenInfo)
-	f.screenInfo.ScreenWidth, f.screenInfo.ScreenHeight = robotgo.GetScreenSize()
 	bitmapRef := robotgo.CaptureScreen(0, 0, 10, 10)
 	img := robotgo.ToImage(bitmapRef)
 	displayWidth := img.Bounds().Size().X
-	f.screenInfo.DisplayZoom = float64(10) / float64(displayWidth)
-	f.Info("Screen info", "width", f.screenInfo.ScreenWidth, "height", f.screenInfo.ScreenHeight, "zoom", f.screenInfo.DisplayZoom)
-	f.Info("Config info", fmt.Sprintf("%+v", f.Config))
-	for _, v := range f.Config.ListKeyCycle {
+	screenInfo.DisplayZoom = float64(10) / float64(displayWidth)
+	f.Info("Screen info", "width", screenInfo.ScreenWidth, "height", screenInfo.ScreenHeight, "zoom", screenInfo.DisplayZoom)
+	f.Info("Config info", fmt.Sprintf("%+v", C))
+	for _, v := range C.ListKeyCycle {
 		f.Info("Key cycle", fmt.Sprintf("%+v", v))
 	}
 	return f
 }
 
 func (f *Fishing) Run() error {
-	go f.watchKeyboard()
 	go f.watchTask()
 	select {}
 }
 
 func (f *Fishing) watchTask() {
 	for task := range f.task {
-		typ := f.runTask(task)
 		select {
 		case <-task.Context.Done():
 			f.Info("User manual pause")
 		default:
+			// 执行任务
+			typ := f.runTask(task)
 			go func(task *Task) {
 				switch typ {
 				case TaskTypeThrowFishingRod:
@@ -75,27 +87,47 @@ func (f *Fishing) watchTask() {
 	}
 }
 
-func (f *Fishing) watchKeyboard() {
+func WatchKeyboard(list ...*Fishing) {
 	var keyTime time.Time
-	robotgo.EventHook(hook.KeyHold, []string{f.Config.SwitchButton}, func(e hook.Event) {
+	robotgo.EventHook(hook.KeyHold, []string{C.SwitchButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
 		keyTime = e.When
-		if f.cancelFunc != nil {
-			f.stop()
-		} else {
-			f.start()
+		for _, f := range list {
+			if f.cancelFunc != nil {
+				f.stop()
+			} else {
+				f.start()
+			}
 		}
 	})
-	robotgo.EventHook(hook.KeyHold, []string{f.Config.ColorPickerButton}, func(e hook.Event) {
+	robotgo.EventHook(hook.KeyHold, []string{C.ColorPickerButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
 		keyTime = e.When
 		x, y := robotgo.GetMousePos()
-		f.Config.FloatColor = utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-		f.Info(fmt.Sprintf("Set fish float color: %v", f.Config.FloatColor))
+		var area int
+		if x < screenInfo.ScreenWidth/2 {
+			if y < screenInfo.ScreenHeight/2 {
+				area = 1
+			} else {
+				area = 3
+			}
+		} else {
+			if y < screenInfo.ScreenHeight/2 {
+				area = 2
+			} else {
+				area = 4
+			}
+		}
+		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
+		for _, f := range list {
+			if f.SplitArea == 0 || f.SplitArea == area {
+				f.FloatColor = floatColor
+			}
+		}
 	})
 	s := robotgo.EventStart()
 	<-robotgo.EventProcess(s)
@@ -104,7 +136,8 @@ func (f *Fishing) watchKeyboard() {
 func (f *Fishing) start() {
 	var kc *KeyCycle
 	task := new(Task)
-	for _, v := range f.Config.ListKeyCycle {
+	// 判断是否有按键需要循环操作
+	for _, v := range C.ListKeyCycle {
 		if time.Since(v.ExecTime) > v.CycleDuration {
 			kc = v
 			break
@@ -173,10 +206,10 @@ func (f *Fishing) runTask(t *Task) TaskType {
 // 等待鱼上钩
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	// 按以下清楚垃圾开河蚌的宏
-	f.Config.OpenMacro.Tap()
+	C.OpenMacro.Tap()
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
-	width := f.Config.CompareCoordinate
+	width := C.CompareCoordinate
 	x := f.activeX - width/2
 	y := f.activeY - width/2
 	oldImg := robotgo.ToImage(robotgo.CaptureScreen(x, y, width, width))
@@ -195,12 +228,12 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newLuminance := utils.AverageLuminance(newImg)
 			diff := newLuminance - oldLuminance
 			f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
-			if diff >= f.Config.Luminance {
+			if diff >= C.Luminance {
 				robotgo.Move(f.activeX, f.activeY)
 				robotgo.MouseClick("right")
 				robotgo.Move(0, 0)
 				return true
-			} else if diff < f.Config.Luminance/4 {
+			} else if diff < C.Luminance/4 {
 				oldLuminance = newLuminance
 			}
 			time.Sleep(200 * time.Millisecond)
@@ -219,23 +252,58 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeY = 0
 	robotgo.Move(0, 0)
 	// 按下下竿按键
-	f.Config.FishingButton.Tap()
+	C.FishingButton.Tap()
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
-	f.Config.ClearMacro.Tap()
+	C.ClearMacro.Tap()
 	// 截屏
-	screen := robotgo.ToImage(robotgo.CaptureScreen())
+	var x, y, w, h int
+	w, h = screenInfo.ScreenWidth, screenInfo.ScreenHeight
+	switch f.SplitArea {
+	case 1:
+		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
+	case 2:
+		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
+		x = w
+	case 3:
+		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
+		y = h
+	case 4:
+		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
+		x = w
+		y = h
+	}
+	screen := robotgo.ToImage(robotgo.CaptureScreen(x, y, w, h))
 	// 缩放
-	screen = resize.Resize(uint(f.screenInfo.ScreenWidth), uint(f.screenInfo.ScreenHeight), screen, resize.NearestNeighbor)
+	screen = resize.Resize(uint(w), uint(h), screen, resize.NearestNeighbor)
 	var maxRadius int
-	if f.screenInfo.ScreenWidth > f.screenInfo.ScreenHeight {
-		maxRadius = int(float64(f.screenInfo.ScreenHeight) / 32 * 8)
+	if w > h {
+		maxRadius = int(float64(h) / 32 * 8)
 	} else {
-		maxRadius = int(float64(f.screenInfo.ScreenWidth) / 32 * 8)
+		maxRadius = int(float64(w) / 32 * 8)
 	}
 	var circleList []circle.Coordinate
-	for radius := 5; radius <= maxRadius; radius += 5 {
-		cir := circle.NewCircle(float64(radius), 5, f.screenInfo.ScreenWidth/2, f.screenInfo.ScreenHeight*3/8)
+	step := 5
+	if f.SplitArea > 0 {
+		step = 2
+	}
+	centerX, centerY := screenInfo.ScreenWidth/2, screenInfo.ScreenHeight*3/8
+	switch f.SplitArea {
+	case 1:
+		centerX = screenInfo.ScreenWidth / 4
+		centerY = screenInfo.ScreenHeight * 3 / 16
+	case 2:
+		centerX = screenInfo.ScreenWidth * 3 / 4
+		centerY = screenInfo.ScreenHeight * 3 / 16
+	case 3:
+		centerX = screenInfo.ScreenWidth / 4
+		centerY = screenInfo.ScreenHeight * 11 / 16
+	case 4:
+		centerX = screenInfo.ScreenWidth * 3 / 4
+		centerY = screenInfo.ScreenHeight * 11 / 16
+	}
+	for radius := step; radius <= maxRadius; radius += step {
+		cir := circle.NewCircle(float64(radius), 5, centerX, centerY)
 		circleList = append(circleList, cir.ListCoordinates()...)
 	}
 	store := map[float64][]DiffColorToXY{}
@@ -252,7 +320,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			B: uint8(b >> 8),
 			A: uint8(a >> 8),
 		}
-		data.Diff = utils.RGBDistance(f.Config.FloatColor, rgba)
+		data.Diff = utils.RGBDistance(C.FloatColor, rgba)
 		if len(store[data.Diff]) == 0 {
 			diffKeys = append(diffKeys, data.Diff)
 		}
@@ -301,14 +369,14 @@ func (f *Fishing) stepThrow(t *Task) bool {
 }
 
 func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
-	cutX := x - f.Config.CompareCoordinate/2
-	cutY := y - f.Config.CompareCoordinate/2
-	bitmapRef := robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+	cutX := x - C.CompareCoordinate/2
+	cutY := y - C.CompareCoordinate/2
+	bitmapRef := robotgo.CaptureScreen(cutX, cutY, C.CompareCoordinate, C.CompareCoordinate)
 	oldImg := robotgo.ToImage(bitmapRef)
 	robotgo.Move(x, y)
 	time.Sleep(20 * time.Millisecond)
 	// 移动后对比图片
-	bitmapRef = robotgo.CaptureScreen(cutX, cutY, f.Config.CompareCoordinate, f.Config.CompareCoordinate)
+	bitmapRef = robotgo.CaptureScreen(cutX, cutY, C.CompareCoordinate, C.CompareCoordinate)
 	if bitmapRef == nil {
 		return 0, ErrOutOfBounds
 	}

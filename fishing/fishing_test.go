@@ -2,19 +2,17 @@ package fishing
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 )
 
 func TestNewFishing(t *testing.T) {
-	f := NewFishing(NewDefaultConfig())
+	f := NewFishing(1)
 	_ = f.Run()
-	fmt.Println(f.screenInfo)
 }
 
 func TestFishing_stepThrow(t *testing.T) {
-	f := NewFishing(NewDefaultConfig())
+	f := NewFishing(1)
 	task := new(Task)
 	task.Timeout = time.After(30 * time.Second)
 	task.Type = TaskTypeThrowFishingRod

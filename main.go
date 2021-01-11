@@ -11,13 +11,13 @@ import (
 
 func main() {
 	//checkMac("00-FF-BD-F6-93-F1")
-	c := fishing.NewDefaultConfig()
-	if importCfg := c.ParseParams(); importCfg {
-		bts, _ := json.MarshalIndent(c, "", "    ")
+	if importCfg := fishing.ParseParams(); importCfg {
+		bts, _ := json.MarshalIndent(fishing.C, "", "    ")
 		fmt.Println(string(bts))
 		return
 	}
-	f := fishing.NewFishing(c)
+	f := fishing.NewFishing(1)
+	go fishing.WatchKeyboard(f)
 	log.Fatalln(f.Run())
 }
 

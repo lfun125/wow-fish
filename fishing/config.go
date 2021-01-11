@@ -81,12 +81,14 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-func (c *Config) ParseParams() (importCfg bool) {
-	flag.Var(&c.FishingButton, "fb", "钓鱼按键，如果是坐标用逗号隔开")
-	flag.Var(&c.ClearMacro, "cm", "清理垃圾宏按键，如果是坐标用逗号隔开")
-	flag.Var(&c.OpenMacro, "om", "打开河蚌箱子宏按键，如果是坐标用逗号隔开")
-	flag.Float64Var(&c.Luminance, "l", c.Luminance, "明亮度大于等于这个值就收杆")
-	flag.Var(&c.ListKeyCycle, "cycle", "key,time,cycle")
+var C = NewDefaultConfig()
+
+func ParseParams() (importCfg bool) {
+	flag.Var(&C.FishingButton, "fb", "钓鱼按键，如果是坐标用逗号隔开")
+	flag.Var(&C.ClearMacro, "cm", "清理垃圾宏按键，如果是坐标用逗号隔开")
+	flag.Var(&C.OpenMacro, "om", "打开河蚌箱子宏按键，如果是坐标用逗号隔开")
+	flag.Float64Var(&C.Luminance, "l", C.Luminance, "明亮度大于等于这个值就收杆")
+	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.Parse()
 	return
