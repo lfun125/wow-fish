@@ -375,7 +375,7 @@ func WatchKeyboard(list ...*Fishing) {
 			panic(err)
 		}
 		switch key {
-		case keyboard.KeyF3:
+		case keyboard.KeyCtrlR:
 			for _, f := range list {
 				if f.cancelFunc != nil {
 					f.stop()
