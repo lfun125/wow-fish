@@ -190,7 +190,8 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 				<-operation.AddOperation(f.SplitArea, func() interface{} {
 					robotgo.Move(f.activeX, f.activeY)
 					time.Sleep(500 * time.Millisecond)
-					robotgo.MouseClick("right")
+					robotgo.MouseClick("left")
+					robotgo.MouseClick("right", true)
 					robotgo.Move(0, 0)
 					return nil
 				})
