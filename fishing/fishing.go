@@ -294,6 +294,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			}
 			ary = append(ary, xy)
 		}
+		f.Info(v, ary)
 	}
 	result := operation.AddOperation(f.SplitArea, func() interface{} {
 		for _, xy := range ary {
@@ -403,7 +404,5 @@ func WatchKeyboard(list ...*Fishing) {
 		}
 	})
 	s := robotgo.EventStart()
-	fmt.Println("startVVV")
 	<-robotgo.EventProcess(s)
-	fmt.Println("over")
 }
