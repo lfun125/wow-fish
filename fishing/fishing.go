@@ -350,6 +350,9 @@ func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 }
 
 func (f Fishing) Info(args ...interface{}) {
+	if f.SplitArea != 2 {
+		return
+	}
 	var data []interface{}
 	data = append(data, fmt.Sprintf("Try: [%d]", f.times))
 	data = append(data, args...)
