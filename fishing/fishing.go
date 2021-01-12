@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fish/circle"
+	"fish/operation"
+	"fish/screen"
 	"fish/utils"
 	"fmt"
 	"image/color"
@@ -20,10 +22,6 @@ var (
 	ErrOutOfBounds = errors.New("Out of bounds ")
 )
 
-var (
-	screenInfo *ScreenInfo
-)
-
 type Fishing struct {
 	// 分屏所在分配区域 1-4; 0不分屏
 	SplitArea int
@@ -36,11 +34,6 @@ type Fishing struct {
 	times      int
 }
 
-func init() {
-	screenInfo = new(ScreenInfo)
-	screenInfo.ScreenWidth, screenInfo.ScreenHeight = robotgo.GetScreenSize()
-}
-
 func NewFishing(splitArea int) *Fishing {
 	f := new(Fishing)
 	f.FloatColor = C.FloatColor
@@ -49,8 +42,8 @@ func NewFishing(splitArea int) *Fishing {
 	bitmapRef := robotgo.CaptureScreen(0, 0, 10, 10)
 	img := robotgo.ToImage(bitmapRef)
 	displayWidth := img.Bounds().Size().X
-	screenInfo.DisplayZoom = float64(10) / float64(displayWidth)
-	f.Info("Screen info", "width", screenInfo.ScreenWidth, "height", screenInfo.ScreenHeight, "zoom", screenInfo.DisplayZoom)
+	screen.Info.DisplayZoom = float64(10) / float64(displayWidth)
+	f.Info("Screen info", "width", screen.Info.ScreenWidth, "height", screen.Info.ScreenHeight, "zoom", screen.Info.DisplayZoom)
 	f.Info("Config info", fmt.Sprintf("%+v", C))
 	for _, v := range C.ListKeyCycle {
 		f.Info("Key cycle", fmt.Sprintf("%+v", v))
@@ -65,12 +58,12 @@ func (f *Fishing) Run() error {
 
 func (f *Fishing) watchTask() {
 	for task := range f.task {
+		// 执行任务
+		typ := f.runTask(task)
 		select {
 		case <-task.Context.Done():
 			f.Info("User manual pause")
 		default:
-			// 执行任务
-			typ := f.runTask(task)
 			go func(task *Task) {
 				switch typ {
 				case TaskTypeThrowFishingRod:
@@ -157,7 +150,10 @@ func (f *Fishing) runTask(t *Task) TaskType {
 // 等待鱼上钩
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	// 按以下清楚垃圾开河蚌的宏
-	C.OpenMacro.Tap()
+	<-operation.AddOperation(f.SplitArea, func() interface{} {
+		C.OpenMacro.Tap()
+		return nil
+	})
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	compareCoordinate := C.CompareCoordinate
@@ -184,9 +180,13 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			diff := newLuminance - oldLuminance
 			f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
 			if diff >= C.Luminance {
-				robotgo.Move(f.activeX, f.activeY)
-				robotgo.MouseClick("right")
-				robotgo.Move(0, 0)
+				// 上钩收杆
+				<-operation.AddOperation(f.SplitArea, func() interface{} {
+					robotgo.Move(f.activeX, f.activeY)
+					robotgo.MouseClick("right")
+					robotgo.Move(0, 0)
+					return nil
+				})
 				return true
 			} else if diff < C.Luminance/4 {
 				oldLuminance = newLuminance
@@ -205,21 +205,25 @@ type DiffColorToXY struct {
 func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeX = 0
 	f.activeY = 0
-	robotgo.Move(0, 0)
-	// 按下下竿按键
-	C.FishingButton.Tap()
+	// 甩杆
+	<-operation.AddOperation(f.SplitArea, func() interface{} {
+		C.FishingButton.Tap()
+		return nil
+	})
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
-	C.ClearMacro.Tap()
+	operation.AddOperation(f.SplitArea, func() {
+		C.ClearMacro.Tap()
+	})
 	// 截屏
 	var w, h int
-	w, h = screenInfo.ScreenWidth, screenInfo.ScreenHeight
+	w, h = screen.Info.ScreenWidth, screen.Info.ScreenHeight
 	if f.SplitArea > 0 {
-		w, h = screenInfo.ScreenWidth/2, screenInfo.ScreenHeight/2
+		w, h = screen.Info.ScreenWidth/2, screen.Info.ScreenHeight/2
 	}
-	screen := robotgo.ToImage(robotgo.CaptureScreen())
+	screenImg := robotgo.ToImage(robotgo.CaptureScreen())
 	// 缩放
-	screen = resize.Resize(uint(screenInfo.ScreenWidth), uint(screenInfo.ScreenHeight), screen, resize.NearestNeighbor)
+	screenImg = resize.Resize(uint(screen.Info.ScreenWidth), uint(screen.Info.ScreenHeight), screenImg, resize.NearestNeighbor)
 	var maxRadius int
 	if w > h {
 		maxRadius = int(float64(h) / 32 * 8)
@@ -231,20 +235,20 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	if f.SplitArea > 0 {
 		step = 2
 	}
-	centerX, centerY := screenInfo.ScreenWidth/2, screenInfo.ScreenHeight*3/8
+	centerX, centerY := screen.Info.ScreenWidth/2, screen.Info.ScreenHeight*3/8
 	switch f.SplitArea {
 	case 1:
-		centerX = screenInfo.ScreenWidth / 4
-		centerY = screenInfo.ScreenHeight * 3 / 16
+		centerX = screen.Info.ScreenWidth / 4
+		centerY = screen.Info.ScreenHeight * 3 / 16
 	case 2:
-		centerX = screenInfo.ScreenWidth * 3 / 4
-		centerY = screenInfo.ScreenHeight * 3 / 16
+		centerX = screen.Info.ScreenWidth * 3 / 4
+		centerY = screen.Info.ScreenHeight * 3 / 16
 	case 3:
-		centerX = screenInfo.ScreenWidth / 4
-		centerY = screenInfo.ScreenHeight * 11 / 16
+		centerX = screen.Info.ScreenWidth / 4
+		centerY = screen.Info.ScreenHeight * 11 / 16
 	case 4:
-		centerX = screenInfo.ScreenWidth * 3 / 4
-		centerY = screenInfo.ScreenHeight * 11 / 16
+		centerX = screen.Info.ScreenWidth * 3 / 4
+		centerY = screen.Info.ScreenHeight * 11 / 16
 	}
 	for radius := step; radius <= maxRadius; radius += step {
 		cir := circle.NewCircle(float64(radius), 5, centerX, centerY)
@@ -257,7 +261,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 		var data DiffColorToXY
 		data.X = v.X
 		data.Y = v.Y
-		r, g, b, a := screen.At(data.X, data.Y).RGBA()
+		r, g, b, a := screenImg.At(data.X, data.Y).RGBA()
 		rgba := color.RGBA{
 			R: uint8(r >> 8),
 			G: uint8(g >> 8),
@@ -277,6 +281,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	if number = len(diffKeys); number > 3 {
 		number = 3
 	}
+	var ary []DiffColorToXY
 	for _, v := range diffKeys[0:number] {
 		list := store[v]
 		var number int
@@ -285,6 +290,11 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			if number > 3 {
 				continue
 			}
+			ary = append(ary, xy)
+		}
+	}
+	result := operation.AddOperation(f.SplitArea, func() interface{} {
+		for _, xy := range ary {
 			select {
 			case <-t.Timeout:
 				return false
@@ -304,6 +314,10 @@ func (f *Fishing) stepThrow(t *Task) bool {
 				}
 			}
 		}
+		return true
+	})
+	if ok := <-result; !ok.(bool) {
+		return false
 	}
 	if f.activeX > 0 {
 		robotgo.Move(f.activeX, f.activeY)
@@ -362,14 +376,14 @@ func WatchKeyboard(list ...*Fishing) {
 		keyTime = e.When
 		x, y := robotgo.GetMousePos()
 		var area int
-		if x < screenInfo.ScreenWidth/2 {
-			if y < screenInfo.ScreenHeight/2 {
+		if x < screen.Info.ScreenWidth/2 {
+			if y < screen.Info.ScreenHeight/2 {
 				area = 1
 			} else {
 				area = 3
 			}
 		} else {
-			if y < screenInfo.ScreenHeight/2 {
+			if y < screen.Info.ScreenHeight/2 {
 				area = 2
 			} else {
 				area = 4
@@ -384,5 +398,7 @@ func WatchKeyboard(list ...*Fishing) {
 		}
 	})
 	s := robotgo.EventStart()
+	fmt.Println("startVVV")
 	<-robotgo.EventProcess(s)
+	fmt.Println("over")
 }

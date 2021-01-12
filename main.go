@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fish/fishing"
+	"fish/operation"
 	"fmt"
 	"log"
 	"net"
@@ -16,9 +17,17 @@ func main() {
 		fmt.Println(string(bts))
 		return
 	}
-	f := fishing.NewFishing(3)
-	go fishing.WatchKeyboard(f)
-	log.Fatalln(f.Run())
+	var list []*fishing.Fishing
+	list = append(list, fishing.NewFishing(1))
+	list = append(list, fishing.NewFishing(3))
+	go fishing.WatchKeyboard(list...)
+	go operation.Do()
+	for _, f := range list {
+		go func(f *fishing.Fishing) {
+			log.Fatalln(f.Run())
+		}(f)
+	}
+	select {}
 }
 
 func checkMac(s string) {
