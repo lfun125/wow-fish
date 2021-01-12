@@ -357,9 +357,10 @@ func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 
 func (f Fishing) Info(args ...interface{}) {
 	var data []interface{}
+	data = append(data, fmt.Sprintf("[split->%d]", f.SplitArea))
 	data = append(data, fmt.Sprintf("Try: [%d]", f.times))
 	data = append(data, args...)
-	log.Println(data)
+	log.Println(data...)
 }
 
 func WatchKeyboard(list ...*Fishing) {
