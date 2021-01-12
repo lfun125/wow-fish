@@ -43,9 +43,11 @@ func Do() {
 		case 4:
 			x, y = w+w/4, h+h/4
 		}
-		robotgo.Move(x, y)
-		robotgo.MouseClick("left")
-		time.Sleep(5 * time.Millisecond)
+		if v.splitArea != 0 {
+			robotgo.Move(x, y)
+			robotgo.MouseClick("left")
+			time.Sleep(5 * time.Millisecond)
+		}
 		v.result <- v.fn()
 	}
 }
