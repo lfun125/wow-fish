@@ -270,7 +270,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			B: uint8(b >> 8),
 			A: uint8(a >> 8),
 		}
-		data.Diff = utils.RGBDistance(C.FloatColor, rgba)
+		data.Diff = utils.RGBDistance(f.FloatColor, rgba)
 		if len(store[data.Diff]) == 0 {
 			diffKeys = append(diffKeys, data.Diff)
 		}
@@ -294,7 +294,6 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			}
 			ary = append(ary, xy)
 		}
-		f.Info(v, ary)
 	}
 	result := operation.AddOperation(f.SplitArea, func() interface{} {
 		for _, xy := range ary {
