@@ -212,8 +212,9 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	})
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
-	operation.AddOperation(f.SplitArea, func() {
+	<-operation.AddOperation(f.SplitArea, func() interface{} {
 		C.ClearMacro.Tap()
+		return nil
 	})
 	// 截屏
 	var w, h int
