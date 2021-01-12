@@ -91,11 +91,11 @@ func (split SplitList) String() string {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		FishingButton: operation.Button{Key: "1"},
-		OpenMacro:     operation.Button{Key: "2"},
-		ClearMacro:    operation.Button{},
-		//SwitchButton:      "f3",
-		//ColorPickerButton: "f4",
+		FishingButton:     operation.Button{Key: "1"},
+		OpenMacro:         operation.Button{Key: "2"},
+		ClearMacro:        operation.Button{},
+		SwitchButton:      "f3",
+		ColorPickerButton: "f4",
 		CompareCoordinate: 100,
 		Luminance:         4,
 		FloatColor: color.RGBA{

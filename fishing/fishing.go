@@ -11,11 +11,10 @@ import (
 	"fmt"
 	"image/color"
 	"log"
-	"os"
 	"sort"
 	"time"
 
-	"github.com/eiannone/keyboard"
+	hook "github.com/robotn/gohook"
 
 	"github.com/go-vgo/robotgo"
 	"github.com/nfnt/resize"
@@ -364,95 +363,95 @@ func (f Fishing) Info(args ...interface{}) {
 }
 
 func WatchKeyboard(list ...*Fishing) {
-	if err := keyboard.Open(); err != nil {
-		panic(err)
-	}
-	defer func() {
-		_ = keyboard.Close()
-	}()
-	for {
-		_, key, err := keyboard.GetKey()
-		if err != nil {
-			panic(err)
+	//if err := keyboard.Open(); err != nil {
+	//	panic(err)
+	//}
+	//defer func() {
+	//	_ = keyboard.Close()
+	//}()
+	//for {
+	//	_, key, err := keyboard.GetKey()
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	switch key {
+	//	case keyboard.KeyCtrlR:
+	//		for _, f := range list {
+	//			if f.cancelFunc != nil {
+	//				f.stop()
+	//			} else {
+	//				f.start()
+	//			}
+	//		}
+	//	case keyboard.KeyF4:
+	//		x, y := robotgo.GetMousePos()
+	//		var area int
+	//		if x < screen.Info.ScreenWidth/2 {
+	//			if y < screen.Info.ScreenHeight/2 {
+	//				area = 1
+	//			} else {
+	//				area = 3
+	//			}
+	//		} else {
+	//			if y < screen.Info.ScreenHeight/2 {
+	//				area = 2
+	//			} else {
+	//				area = 4
+	//			}
+	//		}
+	//		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
+	//		for _, f := range list {
+	//			if f.SplitArea == 0 || f.SplitArea == area {
+	//				f.FloatColor = floatColor
+	//				fmt.Println(floatColor)
+	//			}
+	//		}
+	//	case keyboard.KeyEsc:
+	//		os.Exit(0)
+	//	}
+	//}
+	var keyTime time.Time
+	robotgo.EventHook(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
+		if e.When.Sub(keyTime) < 300*time.Millisecond {
+			return
 		}
-		switch key {
-		case keyboard.KeyCtrlR:
-			for _, f := range list {
-				if f.cancelFunc != nil {
-					f.stop()
-				} else {
-					f.start()
-				}
-			}
-		case keyboard.KeyF4:
-			x, y := robotgo.GetMousePos()
-			var area int
-			if x < screen.Info.ScreenWidth/2 {
-				if y < screen.Info.ScreenHeight/2 {
-					area = 1
-				} else {
-					area = 3
-				}
+		keyTime = e.When
+		for _, f := range list {
+			if f.cancelFunc != nil {
+				f.stop()
 			} else {
-				if y < screen.Info.ScreenHeight/2 {
-					area = 2
-				} else {
-					area = 4
-				}
+				f.start()
 			}
-			floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-			for _, f := range list {
-				if f.SplitArea == 0 || f.SplitArea == area {
-					f.FloatColor = floatColor
-					fmt.Println(floatColor)
-				}
-			}
-		case keyboard.KeyEsc:
-			os.Exit(0)
 		}
-	}
-	//var keyTime time.Time
-	//robotgo.EventHook(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
-	//	if e.When.Sub(keyTime) < 300*time.Millisecond {
-	//		return
-	//	}
-	//	keyTime = e.When
-	//	for _, f := range list {
-	//		if f.cancelFunc != nil {
-	//			f.stop()
-	//		} else {
-	//			f.start()
-	//		}
-	//	}
-	//})
-	//robotgo.EventHook(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
-	//	if e.When.Sub(keyTime) < 300*time.Millisecond {
-	//		return
-	//	}
-	//	keyTime = e.When
-	//	x, y := robotgo.GetMousePos()
-	//	var area int
-	//	if x < screen.Info.ScreenWidth/2 {
-	//		if y < screen.Info.ScreenHeight/2 {
-	//			area = 1
-	//		} else {
-	//			area = 3
-	//		}
-	//	} else {
-	//		if y < screen.Info.ScreenHeight/2 {
-	//			area = 2
-	//		} else {
-	//			area = 4
-	//		}
-	//	}
-	//	floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-	//	for _, f := range list {
-	//		if f.SplitArea == 0 || f.SplitArea == area {
-	//			f.FloatColor = floatColor
-	//			fmt.Println(floatColor)
-	//		}
-	//	}
-	//})
-	//s := robotgo.EventStart()
-	//<-robotgo.EventProcess(s)
+	})
+	robotgo.EventHook(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
+		if e.When.Sub(keyTime) < 300*time.Millisecond {
+			return
+		}
+		keyTime = e.When
+		x, y := robotgo.GetMousePos()
+		var area int
+		if x < screen.Info.ScreenWidth/2 {
+			if y < screen.Info.ScreenHeight/2 {
+				area = 1
+			} else {
+				area = 3
+			}
+		} else {
+			if y < screen.Info.ScreenHeight/2 {
+				area = 2
+			} else {
+				area = 4
+			}
+		}
+		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
+		for _, f := range list {
+			if f.SplitArea == 0 || f.SplitArea == area {
+				f.FloatColor = floatColor
+				fmt.Println(floatColor)
+			}
+		}
+	})
+	s := robotgo.EventStart()
+	<-robotgo.EventProcess(s)
 }
