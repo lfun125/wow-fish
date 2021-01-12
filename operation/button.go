@@ -1,4 +1,4 @@
-package fishing
+package operation
 
 import (
 	"errors"

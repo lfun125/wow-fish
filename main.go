@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fish/config"
 	"fish/fishing"
 	"fish/operation"
 	"fmt"
@@ -12,14 +13,18 @@ import (
 
 func main() {
 	//checkMac("00-FF-BD-F6-93-F1")
-	if importCfg := fishing.ParseParams(); importCfg {
-		bts, _ := json.MarshalIndent(fishing.C, "", "    ")
+	var splitList []int
+	var importCfg bool
+	if importCfg, splitList = config.ParseParams(); importCfg {
+		bts, _ := json.MarshalIndent(config.C, "", "    ")
 		fmt.Println(string(bts))
 		return
 	}
+	log.Println("splitList", splitList)
 	var list []*fishing.Fishing
-	list = append(list, fishing.NewFishing(1))
-	list = append(list, fishing.NewFishing(3))
+	for _, v := range splitList {
+		list = append(list, fishing.NewFishing(v))
+	}
 	go fishing.WatchKeyboard(list...)
 	go operation.Do()
 	for _, f := range list {

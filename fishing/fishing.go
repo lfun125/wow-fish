@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fish/circle"
+	"fish/config"
 	"fish/operation"
 	"fish/screen"
 	"fish/utils"
@@ -36,7 +37,7 @@ type Fishing struct {
 
 func NewFishing(splitArea int) *Fishing {
 	f := new(Fishing)
-	f.FloatColor = C.FloatColor
+	f.FloatColor = config.C.FloatColor
 	f.SplitArea = splitArea
 	f.task = make(chan *Task)
 	bitmapRef := robotgo.CaptureScreen(0, 0, 10, 10)
@@ -44,8 +45,8 @@ func NewFishing(splitArea int) *Fishing {
 	displayWidth := img.Bounds().Size().X
 	screen.Info.DisplayZoom = float64(10) / float64(displayWidth)
 	f.Info("Screen info", "width", screen.Info.ScreenWidth, "height", screen.Info.ScreenHeight, "zoom", screen.Info.DisplayZoom)
-	f.Info("Config info", fmt.Sprintf("%+v", C))
-	for _, v := range C.ListKeyCycle {
+	f.Info("Config info", fmt.Sprintf("%+v", config.C))
+	for _, v := range config.C.ListKeyCycle {
 		f.Info("Key cycle", fmt.Sprintf("%+v", v))
 	}
 	return f
@@ -78,10 +79,10 @@ func (f *Fishing) watchTask() {
 }
 
 func (f *Fishing) start() {
-	var kc *KeyCycle
+	var kc *config.KeyCycle
 	task := new(Task)
 	// 判断是否有按键需要循环操作
-	for _, v := range C.ListKeyCycle {
+	for _, v := range config.C.ListKeyCycle {
 		if time.Since(v.ExecTime) > v.CycleDuration {
 			kc = v
 			break
@@ -119,8 +120,11 @@ func (f *Fishing) stop() {
 func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskKeyboard:
-		kc := t.Context.Value("KeyCycle").(*KeyCycle)
-		kc.Key.Tap()
+		kc := t.Context.Value("KeyCycle").(*config.KeyCycle)
+		<-operation.AddOperation(f.SplitArea, func() interface{} {
+			kc.Key.Tap()
+			return nil
+		})
 		time.Sleep(kc.WaitTime)
 		kc.ExecTime = time.Now()
 		return TaskTypeThrowFishingRod
@@ -151,12 +155,12 @@ func (f *Fishing) runTask(t *Task) TaskType {
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	// 按以下清楚垃圾开河蚌的宏
 	<-operation.AddOperation(f.SplitArea, func() interface{} {
-		C.OpenMacro.Tap()
+		config.C.OpenMacro.Tap()
 		return nil
 	})
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
-	compareCoordinate := C.CompareCoordinate
+	compareCoordinate := config.C.CompareCoordinate
 	if f.SplitArea > 0 {
 		compareCoordinate /= 2
 	}
@@ -179,7 +183,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newLuminance := utils.AverageLuminance(newImg)
 			diff := newLuminance - oldLuminance
 			f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
-			if diff >= C.Luminance {
+			if diff >= config.C.Luminance {
 				// 上钩收杆
 				<-operation.AddOperation(f.SplitArea, func() interface{} {
 					robotgo.Move(f.activeX, f.activeY)
@@ -189,7 +193,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 					return nil
 				})
 				return true
-			} else if diff < C.Luminance/4 {
+			} else if diff < config.C.Luminance/4 {
 				oldLuminance = newLuminance
 			}
 			time.Sleep(200 * time.Millisecond)
@@ -208,13 +212,13 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeY = 0
 	// 甩杆
 	<-operation.AddOperation(f.SplitArea, func() interface{} {
-		C.FishingButton.Tap()
+		config.C.FishingButton.Tap()
 		return nil
 	})
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
 	<-operation.AddOperation(f.SplitArea, func() interface{} {
-		C.ClearMacro.Tap()
+		config.C.ClearMacro.Tap()
 		return nil
 	})
 	// 截屏
@@ -329,7 +333,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 }
 
 func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
-	compareCoordinate := C.CompareCoordinate
+	compareCoordinate := config.C.CompareCoordinate
 	if f.SplitArea > 0 {
 		compareCoordinate /= 2
 	}
@@ -350,9 +354,6 @@ func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 }
 
 func (f Fishing) Info(args ...interface{}) {
-	if f.SplitArea != 2 {
-		return
-	}
 	var data []interface{}
 	data = append(data, fmt.Sprintf("Try: [%d]", f.times))
 	data = append(data, args...)
@@ -361,7 +362,7 @@ func (f Fishing) Info(args ...interface{}) {
 
 func WatchKeyboard(list ...*Fishing) {
 	var keyTime time.Time
-	robotgo.EventHook(hook.KeyHold, []string{C.SwitchButton}, func(e hook.Event) {
+	robotgo.EventHook(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
@@ -374,7 +375,7 @@ func WatchKeyboard(list ...*Fishing) {
 			}
 		}
 	})
-	robotgo.EventHook(hook.KeyHold, []string{C.ColorPickerButton}, func(e hook.Event) {
+	robotgo.EventHook(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
