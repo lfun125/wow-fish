@@ -122,7 +122,7 @@ func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskKeyboard:
 		kc := t.Context.Value("KeyCycle").(*config.KeyCycle)
-		<-operation.AddOperation(f.SplitArea, func() interface{} {
+		<-operation.AddOperation(f.SplitArea, true, func() interface{} {
 			kc.Key.Tap()
 			return nil
 		})
@@ -154,11 +154,6 @@ func (f *Fishing) runTask(t *Task) TaskType {
 
 // 等待鱼上钩
 func (f *Fishing) stepWaitPullHook(t *Task) bool {
-	// 按以下清楚垃圾开河蚌的宏
-	<-operation.AddOperation(f.SplitArea, func() interface{} {
-		config.C.OpenMacro.Tap()
-		return nil
-	})
 	time.Sleep(2 * time.Second)
 	f.Info("Active coordinate x:", f.activeX, "y:", f.activeY)
 	compareCoordinate := config.C.CompareCoordinate
@@ -186,14 +181,21 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
 			if diff >= config.C.Luminance {
 				// 上钩收杆
-				<-operation.AddOperation(f.SplitArea, func() interface{} {
-					robotgo.Move(f.activeX, f.activeY)
-					time.Sleep(500 * time.Millisecond)
-					robotgo.MouseClick("left")
+				<-operation.AddOperation(f.SplitArea, false, func() interface{} {
+					area := getMouseSplitArea()
+					wait := f.SplitArea > 0 && f.SplitArea != area
+					robotgo.MoveMouse(f.activeX, f.activeY)
+					if wait {
+						time.Sleep(100 * time.Millisecond)
+					}
+					robotgo.MouseClick("right")
+					if wait {
+						time.Sleep(100 * time.Millisecond)
+					}
 					robotgo.MouseClick("right", true)
-					robotgo.Move(0, 0)
 					return nil
 				})
+				<-operation.AddOperation(f.SplitArea, true, nil)
 				return true
 			} else if diff < config.C.Luminance/4 {
 				oldLuminance = newLuminance
@@ -213,16 +215,19 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	f.activeX = 0
 	f.activeY = 0
 	// 甩杆
-	<-operation.AddOperation(f.SplitArea, func() interface{} {
+	<-operation.AddOperation(f.SplitArea, true, func() interface{} {
 		config.C.FishingButton.Tap()
+		// 按以下清楚垃圾开河蚌的宏
+		config.C.OpenMacro.Tap()
+		config.C.ClearMacro.Tap()
 		return nil
 	})
 	time.Sleep(3 * time.Second)
 	// 清楚垃圾
-	<-operation.AddOperation(f.SplitArea, func() interface{} {
-		config.C.ClearMacro.Tap()
-		return nil
-	})
+	// <-operation.AddOperation(f.SplitArea, true, func() interface{} {
+	// 	config.C.ClearMacro.Tap()
+	// 	return nil
+	// })
 	// 截屏
 	var w, h int
 	w, h = screen.Info.ScreenWidth, screen.Info.ScreenHeight
@@ -301,7 +306,7 @@ func (f *Fishing) stepThrow(t *Task) bool {
 			ary = append(ary, xy)
 		}
 	}
-	result := operation.AddOperation(f.SplitArea, func() interface{} {
+	result := operation.AddOperation(f.SplitArea, false, func() interface{} {
 		for _, xy := range ary {
 			select {
 			case <-t.Timeout:
@@ -363,54 +368,26 @@ func (f Fishing) Info(args ...interface{}) {
 	log.Println(data...)
 }
 
+func getMouseSplitArea() int {
+	x, y := robotgo.GetMousePos()
+	var area int
+	if x < screen.Info.ScreenWidth/2 {
+		if y < screen.Info.ScreenHeight/2 {
+			area = 1
+		} else {
+			area = 3
+		}
+	} else {
+		if y < screen.Info.ScreenHeight/2 {
+			area = 2
+		} else {
+			area = 4
+		}
+	}
+	return area
+}
+
 func WatchKeyboard(list ...*Fishing) {
-	//if err := keyboard.Open(); err != nil {
-	//	panic(err)
-	//}
-	//defer func() {
-	//	_ = keyboard.Close()
-	//}()
-	//for {
-	//	_, key, err := keyboard.GetKey()
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	switch key {
-	//	case keyboard.KeyCtrlR:
-	//		for _, f := range list {
-	//			if f.cancelFunc != nil {
-	//				f.stop()
-	//			} else {
-	//				f.start()
-	//			}
-	//		}
-	//	case keyboard.KeyF4:
-	//		x, y := robotgo.GetMousePos()
-	//		var area int
-	//		if x < screen.Info.ScreenWidth/2 {
-	//			if y < screen.Info.ScreenHeight/2 {
-	//				area = 1
-	//			} else {
-	//				area = 3
-	//			}
-	//		} else {
-	//			if y < screen.Info.ScreenHeight/2 {
-	//				area = 2
-	//			} else {
-	//				area = 4
-	//			}
-	//		}
-	//		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
-	//		for _, f := range list {
-	//			if f.SplitArea == 0 || f.SplitArea == area {
-	//				f.FloatColor = floatColor
-	//				fmt.Println(floatColor)
-	//			}
-	//		}
-	//	case keyboard.KeyEsc:
-	//		os.Exit(0)
-	//	}
-	//}
 	var keyTime time.Time
 	robotgo.EventHook(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
@@ -431,20 +408,7 @@ func WatchKeyboard(list ...*Fishing) {
 		}
 		keyTime = e.When
 		x, y := robotgo.GetMousePos()
-		var area int
-		if x < screen.Info.ScreenWidth/2 {
-			if y < screen.Info.ScreenHeight/2 {
-				area = 1
-			} else {
-				area = 3
-			}
-		} else {
-			if y < screen.Info.ScreenHeight/2 {
-				area = 2
-			} else {
-				area = 4
-			}
-		}
+		area := getMouseSplitArea()
 		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
 		for _, f := range list {
 			if f.SplitArea == 0 || f.SplitArea == area {

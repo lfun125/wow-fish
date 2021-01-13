@@ -11,19 +11,21 @@ type Operation func() interface{}
 
 type task struct {
 	fn        Operation
+	active    bool
 	splitArea int
 	result    chan interface{}
 }
 
 var operationQueue = make(chan *task)
 
-func AddOperation(splitArea int, o Operation) chan interface{} {
+func AddOperation(splitArea int, active bool, o Operation) chan interface{} {
 	result := make(chan interface{})
 	go func() {
 		operationQueue <- &task{
 			fn:        o,
 			splitArea: splitArea,
 			result:    result,
+			active:    active,
 		}
 	}()
 	return result
@@ -34,7 +36,7 @@ func Do() {
 		var x, y int
 		w, h := screen.Info.ScreenWidth/2, screen.Info.ScreenHeight/2
 		switch v.splitArea {
-		case 1:
+		case 0, 1:
 			x, y = w/4, h/4
 		case 2:
 			x, y = w+w/4, h/4
@@ -43,11 +45,17 @@ func Do() {
 		case 4:
 			x, y = w+w/4, h+h/4
 		}
-		if v.splitArea != 0 {
-			robotgo.Move(x, y)
-			robotgo.MouseClick("left")
-			time.Sleep(5 * time.Millisecond)
+		if v.active {
+			robotgo.MoveMouseSmooth(x, y, 1.0, 0.5)
+			if v.splitArea != 0 {
+				robotgo.MouseClick("left")
+				time.Sleep(5 * time.Millisecond)
+			}
 		}
-		v.result <- v.fn()
+		if v.fn != nil {
+			v.result <- v.fn()
+		} else {
+			v.result <- nil
+		}
 	}
 }
