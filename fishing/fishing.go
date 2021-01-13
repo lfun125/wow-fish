@@ -223,11 +223,6 @@ func (f *Fishing) stepThrow(t *Task) bool {
 		return nil
 	})
 	time.Sleep(3 * time.Second)
-	// 清楚垃圾
-	// <-operation.AddOperation(f.SplitArea, true, func() interface{} {
-	// 	config.C.ClearMacro.Tap()
-	// 	return nil
-	// })
 	// 截屏
 	var w, h int
 	w, h = screen.Info.ScreenWidth, screen.Info.ScreenHeight

@@ -45,14 +45,16 @@ func Do() {
 		case 4:
 			x, y = w+w/4, h+h/4
 		}
+
 		if v.active {
-			robotgo.MoveMouseSmooth(x, y, 1.0, 0.5)
+			robotgo.MoveMouse(x, y)
 			if v.splitArea != 0 {
 				robotgo.MouseClick("left")
 				time.Sleep(5 * time.Millisecond)
 			}
 		}
 		if v.fn != nil {
+
 			v.result <- v.fn()
 		} else {
 			v.result <- nil
