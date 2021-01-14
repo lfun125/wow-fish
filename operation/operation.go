@@ -50,11 +50,10 @@ func Do() {
 			robotgo.MoveMouse(x, y)
 			if v.splitArea != 0 {
 				robotgo.MouseClick("left")
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 			}
 		}
 		if v.fn != nil {
-
 			v.result <- v.fn()
 		} else {
 			v.result <- nil
