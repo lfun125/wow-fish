@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fish/operation"
 	"flag"
+	"fmt"
 	"image/color"
 	"strconv"
 	"strings"
@@ -36,6 +37,11 @@ type KeyCycle struct {
 	ExecTime      time.Time
 	WaitTime      time.Duration
 	CycleDuration time.Duration
+	SplitArea     string
+}
+
+func (kc KeyCycle) String() string {
+	return fmt.Sprintf("%s,%v,%v", kc.Key.String(), kc.WaitTime, kc.CycleDuration)
 }
 
 type ListKeyCycle []*KeyCycle
@@ -46,7 +52,7 @@ func (*ListKeyCycle) String() string {
 
 func (list *ListKeyCycle) Set(s string) error {
 	ary := strings.Split(s, ",")
-	if len(ary) != 3 {
+	if len(ary) != 3 && len(ary) != 4 {
 		return errors.New("Cycle wrong format. ")
 	}
 	timeDuration, err := time.ParseDuration(ary[1])
@@ -62,6 +68,11 @@ func (list *ListKeyCycle) Set(s string) error {
 	data.WaitTime = timeDuration
 	data.CycleDuration = cycleDuration
 	data.ExecTime = time.Now()
+	if len(ary) == 4 {
+		data.SplitArea = fmt.Sprintf("|%s|", strings.Trim(ary[3], "|"))
+	} else {
+		data.SplitArea = "0"
+	}
 	*list = append(*list, data)
 	return nil
 }
@@ -114,7 +125,7 @@ func ParseParams() (importCfg bool, splitList SplitList) {
 	flag.Var(&C.ClearMacro, "cm", "清理垃圾宏按键，如果是坐标用逗号隔开")
 	flag.Var(&C.OpenMacro, "om", "打开河蚌箱子宏按键，如果是坐标用逗号隔开")
 	flag.Float64Var(&C.Luminance, "l", C.Luminance, "明亮度大于等于这个值就收杆")
-	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle")
+	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle[,split area|[split area]]")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.Var(&splitList, "split", "设置分配数量")
 	flag.Parse()

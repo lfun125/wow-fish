@@ -12,6 +12,7 @@ import (
 	"image/color"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	hook "github.com/robotn/gohook"
@@ -50,8 +51,12 @@ func NewFishing(splitArea int) *Fishing {
 	f.Info("Config info", fmt.Sprintf("%+v", config.C))
 	f.listKeyCycle = []*config.KeyCycle{}
 	for _, v := range config.C.ListKeyCycle {
-		f.Info("Key cycle", fmt.Sprintf("%s,%v,%v", v.Key.String(), v.WaitTime, v.CycleDuration))
+		ok := v.SplitArea == "0" || strings.Contains(v.SplitArea, fmt.Sprintf("|%d|", splitArea))
+		if !ok {
+			continue
+		}
 		f.listKeyCycle = append(f.listKeyCycle, &*v)
+		f.Info("Key cycle", v.String())
 	}
 	return f
 }
@@ -86,7 +91,7 @@ func (f *Fishing) start() {
 	var kc *config.KeyCycle
 	task := new(Task)
 	// 判断是否有按键需要循环操作
-	for _, v := range config.C.ListKeyCycle {
+	for _, v := range f.listKeyCycle {
 		if time.Since(v.ExecTime) > v.CycleDuration {
 			kc = v
 			break
