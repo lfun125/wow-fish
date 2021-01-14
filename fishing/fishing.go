@@ -28,12 +28,13 @@ type Fishing struct {
 	// 分屏所在分配区域 1-4; 0不分屏
 	SplitArea int
 	// 鱼漂颜色
-	FloatColor color.RGBA
-	activeX    int
-	activeY    int
-	task       chan *Task
-	cancelFunc context.CancelFunc
-	times      int
+	FloatColor   color.RGBA
+	activeX      int
+	activeY      int
+	task         chan *Task
+	cancelFunc   context.CancelFunc
+	times        int
+	listKeyCycle config.ListKeyCycle
 }
 
 func NewFishing(splitArea int) *Fishing {
@@ -47,8 +48,10 @@ func NewFishing(splitArea int) *Fishing {
 	screen.Info.DisplayZoom = float64(10) / float64(displayWidth)
 	f.Info("Screen info", "width", screen.Info.ScreenWidth, "height", screen.Info.ScreenHeight, "zoom", screen.Info.DisplayZoom)
 	f.Info("Config info", fmt.Sprintf("%+v", config.C))
+	f.listKeyCycle = []*config.KeyCycle{}
 	for _, v := range config.C.ListKeyCycle {
-		f.Info("Key cycle", fmt.Sprintf("%+v", v))
+		f.Info("Key cycle", fmt.Sprintf("%s,%v,%v", v.Key.String(), v.WaitTime, v.CycleDuration))
+		f.listKeyCycle = append(f.listKeyCycle, &*v)
 	}
 	return f
 }
@@ -178,7 +181,9 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			newImg := robotgo.ToImage(bitmapRef)
 			newLuminance := utils.AverageLuminance(newImg)
 			diff := newLuminance - oldLuminance
-			f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
+			if diff >= 1 {
+				f.Info(fmt.Sprintf("Compared luminance: %0.4f", diff))
+			}
 			if diff >= config.C.Luminance {
 				// 上钩收杆
 				<-operation.AddOperation(f.SplitArea, false, func() interface{} {
