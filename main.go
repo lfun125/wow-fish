@@ -39,7 +39,7 @@ func main() {
 }
 
 func debug() {
-	log.Println(http.ListenAndServe("localhost:8211", nil))
+	log.Println(http.ListenAndServe(":8211", nil))
 }
 
 func checkMac(s string) {
