@@ -2,6 +2,7 @@ package fishing
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -18,4 +19,8 @@ func TestFishing_stepThrow(t *testing.T) {
 	task.Type = TaskTypeThrowFishingRod
 	task.Context, f.cancelFunc = context.WithCancel(context.Background())
 	f.stepThrow(task)
+}
+
+func TestA(t *testing.T) {
+	fmt.Println(1)
 }

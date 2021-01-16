@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"strings"
 )
 
 func main() {
 	//checkMac("00-FF-BD-F6-93-F1")
+	go debug()
 	var splitList []int
 	var importCfg bool
 	if importCfg, splitList = config.ParseParams(); importCfg {
@@ -33,6 +36,10 @@ func main() {
 		}(f)
 	}
 	select {}
+}
+
+func debug() {
+	log.Println(http.ListenAndServe("localhost:8211", nil))
 }
 
 func checkMac(s string) {
