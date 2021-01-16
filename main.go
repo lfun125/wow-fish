@@ -15,7 +15,6 @@ import (
 
 func main() {
 	//checkMac("00-FF-BD-F6-93-F1")
-	go debug()
 	var splitList []int
 	var importCfg bool
 	if importCfg, splitList = config.ParseParams(); importCfg {
@@ -28,6 +27,7 @@ func main() {
 	for _, v := range splitList {
 		list = append(list, fishing.NewFishing(v))
 	}
+	go debug()
 	go fishing.WatchKeyboard(list...)
 	go operation.Do()
 	for _, f := range list {
@@ -39,7 +39,9 @@ func main() {
 }
 
 func debug() {
-	log.Println(http.ListenAndServe(":8211", nil))
+	if config.C.Debug {
+		log.Println(http.ListenAndServe(":8211", nil))
+	}
 }
 
 func checkMac(s string) {

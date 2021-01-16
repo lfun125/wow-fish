@@ -30,6 +30,7 @@ type Config struct {
 	Luminance float64
 	// 按键循环
 	ListKeyCycle ListKeyCycle
+	Debug        bool
 }
 
 type KeyCycle struct {
@@ -127,6 +128,7 @@ func ParseParams() (importCfg bool, splitList SplitList) {
 	flag.Float64Var(&C.Luminance, "l", C.Luminance, "明亮度大于等于这个值就收杆")
 	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle[,split area|[split area]]")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
+	flag.BoolVar(&C.Debug, "debug", false, "debug")
 	flag.Var(&splitList, "split", "设置分配数量")
 	flag.Parse()
 	return
