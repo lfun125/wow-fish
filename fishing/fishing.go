@@ -45,6 +45,7 @@ func NewFishing(splitArea int) *Fishing {
 	f.task = make(chan *Task)
 	bitmapRef := robotgo.CaptureScreen(0, 0, 10, 10)
 	img := robotgo.ToImage(bitmapRef)
+	robotgo.FreeBitmap(bitmapRef)
 	displayWidth := img.Bounds().Size().X
 	screen.Info.DisplayZoom = float64(10) / float64(displayWidth)
 	f.Info("Screen info", "width", screen.Info.ScreenWidth, "height", screen.Info.ScreenHeight, "zoom", screen.Info.DisplayZoom)
@@ -171,7 +172,9 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	width := compareCoordinate
 	x := f.activeX - width/2
 	y := f.activeY - width/2
-	oldImg := robotgo.ToImage(robotgo.CaptureScreen(x, y, width, width))
+	bitmapRef := robotgo.CaptureScreen(x, y, width, width)
+	oldImg := robotgo.ToImage(bitmapRef)
+	robotgo.FreeBitmap(bitmapRef)
 	// 图片明亮度
 	oldLuminance := utils.AverageLuminance(oldImg)
 	for {
@@ -184,6 +187,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 		default:
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
 			newImg := robotgo.ToImage(bitmapRef)
+			robotgo.FreeBitmap(bitmapRef)
 			newLuminance := utils.AverageLuminance(newImg)
 			diff := newLuminance - oldLuminance
 			if diff >= 1 {
@@ -239,7 +243,9 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	if f.SplitArea > 0 {
 		w, h = screen.Info.ScreenWidth/2, screen.Info.ScreenHeight/2
 	}
-	screenImg := robotgo.ToImage(robotgo.CaptureScreen())
+	bitmapRef := robotgo.CaptureScreen()
+	screenImg := robotgo.ToImage(bitmapRef)
+	robotgo.FreeBitmap(bitmapRef)
 	// 缩放
 	screenImg = resize.Resize(uint(screen.Info.ScreenWidth), uint(screen.Info.ScreenHeight), screenImg, resize.NearestNeighbor)
 	var maxRadius int
@@ -352,11 +358,13 @@ func (f *Fishing) getRGBDistance(x, y int) (float64, error) {
 	cutX := x - compareCoordinate/2
 	cutY := y - compareCoordinate/2
 	bitmapRef := robotgo.CaptureScreen(cutX, cutY, compareCoordinate, compareCoordinate)
+	defer robotgo.FreeBitmap(bitmapRef)
 	oldImg := robotgo.ToImage(bitmapRef)
 	robotgo.Move(x, y)
 	time.Sleep(20 * time.Millisecond)
 	// 移动后对比图片
 	bitmapRef = robotgo.CaptureScreen(cutX, cutY, compareCoordinate, compareCoordinate)
+	defer robotgo.FreeBitmap(bitmapRef)
 	if bitmapRef == nil {
 		return 0, ErrOutOfBounds
 	}
