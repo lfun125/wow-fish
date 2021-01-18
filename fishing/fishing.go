@@ -140,7 +140,6 @@ func (f *Fishing) runTask(t *Task) TaskType {
 		return TaskTypeThrowFishingRod
 	case TaskTypeThrowFishingRod:
 		f.Info("Start looking for fish floats")
-		//if isFind := f.stepThrowFishingRod(t); isFind {
 		if isFind := f.stepThrow(t); isFind {
 			// 找到鱼漂
 			f.Info("Found a fishing float")
