@@ -21,6 +21,12 @@ import (
 	"github.com/nfnt/resize"
 )
 
+type contextValue int
+
+const (
+	KeyCycle contextValue = iota + 1
+)
+
 var (
 	ErrOutOfBounds = errors.New("Out of bounds ")
 	FishingTime60  = 30 * time.Second
@@ -107,7 +113,7 @@ func (f *Fishing) start() {
 	task.Timeout = time.After(dur)
 	if kc != nil {
 		task.Type = TaskKeyboard
-		ctx := context.WithValue(context.Background(), "KeyCycle", kc)
+		ctx := context.WithValue(context.Background(), KeyCycle, kc)
 		task.Context, f.cancelFunc = context.WithCancel(ctx)
 	} else {
 		f.times++
@@ -136,7 +142,7 @@ func (f *Fishing) stop() {
 func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
 	case TaskKeyboard:
-		kc := t.Context.Value("KeyCycle").(*config.KeyCycle)
+		kc := t.Context.Value(KeyCycle).(*config.KeyCycle)
 		<-operation.AddOperation(f.SplitArea, true, func() interface{} {
 			kc.Key.Tap()
 			return nil
