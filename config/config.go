@@ -30,7 +30,9 @@ type Config struct {
 	Luminance float64
 	// 按键循环
 	ListKeyCycle ListKeyCycle
-	Debug        bool
+	// 魔兽版本
+	WOWVersion string
+	Debug      bool
 }
 
 type KeyCycle struct {
@@ -129,7 +131,8 @@ func ParseParams() (importCfg bool, splitList SplitList) {
 	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle[,split area|[split area]]")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.BoolVar(&C.Debug, "debug", false, "debug")
-	flag.Var(&splitList, "split", "设置分配数量")
+	flag.StringVar(&C.WOWVersion, "WOWVersion", "70", "魔兽世界版本[60|70]")
+	flag.Var(&splitList, "split", "设置分屏数量")
 	flag.Parse()
 	return
 }

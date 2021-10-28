@@ -23,6 +23,8 @@ import (
 
 var (
 	ErrOutOfBounds = errors.New("Out of bounds ")
+	FishingTime60  = 30 * time.Second
+	FishingTime70  = 20 * time.Second
 )
 
 type Fishing struct {
@@ -56,7 +58,7 @@ func NewFishing(splitArea int) *Fishing {
 		if !ok {
 			continue
 		}
-		f.listKeyCycle = append(f.listKeyCycle, &*v)
+		f.listKeyCycle = append(f.listKeyCycle, v)
 		f.Info("Key cycle", v.String())
 	}
 	return f

@@ -13,6 +13,10 @@ import (
 	"strings"
 )
 
+type User struct {
+	Name string
+}
+
 func main() {
 	//checkMac("00-FF-BD-F6-93-F1")
 	var splitList []int
