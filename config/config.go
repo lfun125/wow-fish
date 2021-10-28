@@ -131,7 +131,7 @@ func ParseParams() (importCfg bool, splitList SplitList) {
 	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle[,split area|[split area]]")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.BoolVar(&C.Debug, "debug", false, "debug")
-	flag.StringVar(&C.WOWVersion, "WOWVersion", "70", "魔兽世界版本[60|70]")
+	flag.StringVar(&C.WOWVersion, "wow-ersion", "70", "魔兽世界版本[60|70]")
 	flag.Var(&splitList, "split", "设置分屏数量")
 	flag.Parse()
 	return
