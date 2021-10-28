@@ -100,7 +100,11 @@ func (f *Fishing) start() {
 			break
 		}
 	}
-	task.Timeout = time.After(30 * time.Second)
+	dur := FishingTime70
+	if config.C.WOWVersion == "60" {
+		dur = FishingTime60
+	}
+	task.Timeout = time.After(dur)
 	if kc != nil {
 		task.Type = TaskKeyboard
 		ctx := context.WithValue(context.Background(), "KeyCycle", kc)
