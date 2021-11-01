@@ -60,7 +60,7 @@ func NewFishing(splitArea int) *Fishing {
 	f.Info("Config info", fmt.Sprintf("%+v", config.C))
 	f.listKeyCycle = []*config.KeyCycle{}
 	for _, v := range config.C.ListKeyCycle {
-		ok := v.SplitArea == "0" || strings.Contains(v.SplitArea, fmt.Sprintf("|%d|", splitArea))
+		ok := v.SplitArea == "0" || strings.Contains(v.SplitArea, fmt.Sprintf("_%d_", splitArea))
 		if !ok {
 			continue
 		}

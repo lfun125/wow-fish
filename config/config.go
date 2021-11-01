@@ -44,7 +44,11 @@ type KeyCycle struct {
 }
 
 func (kc KeyCycle) String() string {
-	return fmt.Sprintf("%s,%v,%v", kc.Key.String(), kc.WaitTime, kc.CycleDuration)
+	s := fmt.Sprintf("%s,%v,%v", kc.Key.String(), kc.WaitTime, kc.CycleDuration)
+	if kc.SplitArea != "" {
+		s += "," + strings.Trim(kc.SplitArea, "_")
+	}
+	return s
 }
 
 type ListKeyCycle []*KeyCycle
@@ -72,7 +76,7 @@ func (list *ListKeyCycle) Set(s string) error {
 	data.CycleDuration = cycleDuration
 	data.ExecTime = time.Now()
 	if len(ary) == 4 {
-		data.SplitArea = fmt.Sprintf("|%s|", strings.Trim(ary[3], "|"))
+		data.SplitArea = fmt.Sprintf("_%s_", strings.Trim(ary[3], "_"))
 	} else {
 		data.SplitArea = "0"
 	}
@@ -128,7 +132,7 @@ func ParseParams() (importCfg bool, splitList SplitList) {
 	flag.Var(&C.ClearMacro, "cm", "清理垃圾宏按键，如果是坐标用逗号隔开")
 	flag.Var(&C.OpenMacro, "om", "打开河蚌箱子宏按键，如果是坐标用逗号隔开")
 	flag.Float64Var(&C.Luminance, "l", C.Luminance, "明亮度大于等于这个值就收杆")
-	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle[,split area|[split area]]")
+	flag.Var(&C.ListKeyCycle, "cycle", "key,time,cycle[,split area_[split area]]")
 	flag.BoolVar(&importCfg, "import", false, "导出配置")
 	flag.BoolVar(&C.Debug, "debug", false, "debug")
 	flag.StringVar(&C.WOWVersion, "wow-ersion", "70", "魔兽世界版本[60|70]")
