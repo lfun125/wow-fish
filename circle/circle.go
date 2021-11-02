@@ -56,5 +56,6 @@ func (c Circle) ListCoordinates() (list []Coordinate) {
 }
 
 func round(x float64) int {
-	return int(math.Floor(x + 0/5))
+	// return int(math.Floor(x + 0/5))
+	return int(math.Floor(x))
 }
