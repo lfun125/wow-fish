@@ -13,12 +13,12 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
-
-	hook "github.com/robotn/gohook"
 
 	"github.com/go-vgo/robotgo"
 	"github.com/nfnt/resize"
+	hook "github.com/robotn/gohook"
 )
 
 type contextValue int
@@ -33,15 +33,17 @@ var (
 	FishingTime70  = 20 * time.Second
 )
 
+var opts int64 = 0
+
 type Fishing struct {
 	// 分屏所在分配区域 1-4; 0不分屏
 	SplitArea int
 	// 鱼漂颜色
-	FloatColor   color.RGBA
-	activeX      int
-	activeY      int
-	task         chan *Task
-	cancelFunc   context.CancelFunc
+	FloatColor color.RGBA
+	activeX    int
+	activeY    int
+	task       chan *Task
+	// cancelFunc   context.CancelFunc
 	times        int
 	listKeyCycle config.ListKeyCycle
 }
@@ -77,22 +79,20 @@ func (f *Fishing) Run() error {
 
 func (f *Fishing) watchTask() {
 	for task := range f.task {
+		if !f.ok() {
+			continue
+		}
 		// 执行任务
 		typ := f.runTask(task)
-		select {
-		case <-task.Context.Done():
-			f.Info("User manual pause")
-		default:
-			go func(task *Task) {
-				switch typ {
-				case TaskTypeThrowFishingRod:
-					time.Sleep(2 * time.Second)
-					f.start()
-				case TaskTypeWait:
-					f.waitPullHook(task.Context, task.Timeout)
-				}
-			}(task)
-		}
+		go func(task *Task) {
+			switch typ {
+			case TaskTypeThrowFishingRod:
+				time.Sleep(2 * time.Second)
+				f.start()
+			case TaskTypeWait:
+				f.waitPullHook(task.Context, task.Timeout)
+			}
+		}(task)
 	}
 }
 
@@ -114,13 +114,23 @@ func (f *Fishing) start() {
 	if kc != nil {
 		task.Type = TaskKeyboard
 		ctx := context.WithValue(context.Background(), KeyCycle, kc)
-		task.Context, f.cancelFunc = context.WithCancel(ctx)
+		task.Context = ctx
 	} else {
 		f.times++
 		task.Type = TaskTypeThrowFishingRod
-		task.Context, f.cancelFunc = context.WithCancel(context.Background())
+		task.Context = context.Background()
 	}
-	f.task <- task
+	f.pushTask(task)
+}
+
+func (f *Fishing) pushTask(task *Task) {
+	if f.ok() {
+		f.task <- task
+	}
+}
+
+func (f *Fishing) ok() bool {
+	return opts%2 == 1
 }
 
 // 等待拉钩
@@ -129,15 +139,15 @@ func (f *Fishing) waitPullHook(ctx context.Context, timeout <-chan time.Time) {
 	task.Timeout = timeout
 	task.Type = TaskTypeWait
 	task.Context = ctx
-	f.task <- task
+	f.pushTask(task)
 }
 
-func (f *Fishing) stop() {
-	if f.cancelFunc != nil {
-		f.cancelFunc()
-		f.cancelFunc = nil
-	}
-}
+// func (f *Fishing) stop() {
+// 	if f.cancelFunc != nil {
+// 		f.cancelFunc()
+// 		f.cancelFunc = nil
+// 	}
+// }
 
 func (f *Fishing) runTask(t *Task) TaskType {
 	switch t.Type {
@@ -188,12 +198,10 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 	robotgo.FreeBitmap(bitmapRef)
 	// 图片明亮度
 	oldLuminance := utils.AverageLuminance(oldImg)
-	for {
+	for f.ok() {
 		select {
 		case <-t.Timeout:
 			f.Info("Time out")
-			return false
-		case <-t.Context.Done():
 			return false
 		default:
 			bitmapRef := robotgo.CaptureScreen(x, y, width, width)
@@ -228,6 +236,7 @@ func (f *Fishing) stepWaitPullHook(t *Task) bool {
 			time.Sleep(200 * time.Millisecond)
 		}
 	}
+	return false
 }
 
 type DiffColorToXY struct {
@@ -330,10 +339,11 @@ func (f *Fishing) stepThrow(t *Task) bool {
 	}
 	result := operation.AddOperation(f.SplitArea, false, func() interface{} {
 		for _, xy := range ary {
+			if !f.ok() {
+				return false
+			}
 			select {
 			case <-t.Timeout:
-				return false
-			case <-t.Context.Done():
 				return false
 			default:
 				distance, err := f.getRGBDistance(xy.X, xy.Y)
@@ -418,12 +428,9 @@ func WatchKeyboard(list ...*Fishing) {
 			return
 		}
 		keyTime = e.When
+		atomic.AddInt64(&opts, 1)
 		for _, f := range list {
-			if f.cancelFunc != nil {
-				f.stop()
-			} else {
-				f.start()
-			}
+			f.start()
 		}
 	})
 	robotgo.EventHook(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
