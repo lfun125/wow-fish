@@ -425,7 +425,7 @@ func WatchKeyboard(list ...*Fishing) {
 	var keyTime time.Time
 
 	// 使用 gohook 包监听键盘事件
-	hook.Register(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, []string{config.C.SwitchButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
@@ -436,7 +436,7 @@ func WatchKeyboard(list ...*Fishing) {
 		}
 	})
 
-	hook.Register(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
+	hook.Register(hook.KeyDown, []string{config.C.ColorPickerButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
