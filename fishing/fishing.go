@@ -403,7 +403,7 @@ func (f Fishing) Info(args ...interface{}) {
 }
 
 func getMouseSplitArea() int {
-	x, y := robotgo.GetMousePos()
+	x, y := robotgo.Location()
 	var area int
 	if x < screen.Info.ScreenWidth/2 {
 		if y < screen.Info.ScreenHeight/2 {
@@ -423,7 +423,9 @@ func getMouseSplitArea() int {
 
 func WatchKeyboard(list ...*Fishing) {
 	var keyTime time.Time
-	robotgo.EventHook(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
+
+	// 使用 gohook 包监听键盘事件
+	hook.Register(hook.KeyHold, []string{config.C.SwitchButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
@@ -433,12 +435,13 @@ func WatchKeyboard(list ...*Fishing) {
 			f.start()
 		}
 	})
-	robotgo.EventHook(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
+
+	hook.Register(hook.KeyHold, []string{config.C.ColorPickerButton}, func(e hook.Event) {
 		if e.When.Sub(keyTime) < 300*time.Millisecond {
 			return
 		}
 		keyTime = e.When
-		x, y := robotgo.GetMousePos()
+		x, y := robotgo.Location()
 		area := getMouseSplitArea()
 		floatColor := utils.StrToRGBA(robotgo.GetPixelColor(x, y))
 		for _, f := range list {
@@ -448,6 +451,7 @@ func WatchKeyboard(list ...*Fishing) {
 			}
 		}
 	})
-	s := robotgo.EventStart()
-	<-robotgo.EventProcess(s)
+
+	s := hook.Start()
+	<-hook.Process(s)
 }

@@ -47,9 +47,9 @@ func Do() {
 		}
 
 		if v.active {
-			robotgo.MoveMouse(x, y)
+			robotgo.Move(x, y)
 			if v.splitArea != 0 {
-				robotgo.MouseClick("left")
+				robotgo.Click("left")
 				time.Sleep(100 * time.Millisecond)
 			}
 		}

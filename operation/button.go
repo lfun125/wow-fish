@@ -3,6 +3,7 @@ package operation
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -17,9 +18,11 @@ type Button struct {
 func (b Button) Tap() {
 	if b.Pos.X > 0 && b.Pos.Y > 0 {
 		robotgo.Move(b.Pos.X, b.Pos.Y)
-		robotgo.MouseClick("right")
+		robotgo.Click("right")
 	} else if b.Key != "" {
-		robotgo.KeyTap(b.Key)
+		if err := robotgo.KeyTap(b.Key); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
